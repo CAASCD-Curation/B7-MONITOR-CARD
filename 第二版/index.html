@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>监控室 · MONITOR ROOM</title>
+<style>
+  :root{
+    --ink:#f2f2f2; --dim:#8a8a8a; --acc:#ffffff;
+    --panel:rgba(10,10,10,.82); --line:#3a3a3a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:#050505; color:var(--ink); overflow:hidden;
+    font-family:"Courier New",Consolas,"SimSun",monospace;
+    cursor:default; user-select:none;
+  }
+  /* ---- static noise canvas ---- */
+  #noise{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+  /* ---- scanlines ---- */
+  #scan{position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);
+    opacity:.55;transition:opacity .3s}
+  #scan.off{opacity:0}
+  /* ---- vignette ---- */
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:3;
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75) 100%)}
+  /* ---- layout ---- */
+  #stage{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;justify-content:center}
+  .inner{padding:0 8vw;max-width:1100px}
+  /* ---- title ---- */
+  .cam{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:13px;letter-spacing:.3em;margin-bottom:14px}
+  .cam .rec{width:9px;height:9px;border-radius:50%;background:#e33;animation:blink 1.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+  h1{
+    font-size:clamp(44px,9vw,96px);line-height:1.05;letter-spacing:.08em;font-weight:700;
+    text-shadow:2px 0 rgba(255,0,60,.35),-2px 0 rgba(0,180,255,.35);
+  }
+  h1.jit{animation:jit .12s infinite}
+  @keyframes jit{
+    0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}
+    50%{transform:translate(-1px,1px)}75%{transform:translate(1px,1px)}100%{transform:translate(0,0)}
+  }
+  h1 .en{display:block;font-size:.26em;color:#a8a8a8;letter-spacing:.5em;margin-top:10px;font-weight:400}
+  .rule{color:#a8a8a8;font-size:13px;letter-spacing:.2em;margin:26px 0 40px}
+  /* ---- menu ---- */
+  .menu{display:flex;flex-direction:column;gap:20px;font-size:clamp(22px,3.4vw,34px);letter-spacing:.14em}
+  .mi{display:flex;align-items:center;gap:18px;color:#b8b8b8;cursor:pointer;width:max-content;transition:color .12s}
+  .mi .cur{opacity:0;color:var(--acc);transition:opacity .1s}
+  .mi.on{color:var(--acc)}
+  .mi.on .cur{opacity:1}
+  .mi.on{text-shadow:2px 0 rgba(255,0,60,.4),-2px 0 rgba(0,180,255,.4)}
+  .mi .val{font-size:.5em;color:var(--dim);letter-spacing:.1em}
+  /* ---- panels ---- */
+  .panel{
+    position:fixed;left:8vw;bottom:6vh;z-index:5;width:min(420px,84vw);
+    background:var(--panel);border:1px solid var(--line);padding:20px 22px;
+    display:none;backdrop-filter:blur(4px);
+  }
+  .panel.show{display:block}
+  .panel h2{font-size:14px;letter-spacing:.3em;color:var(--dim);margin-bottom:16px;font-weight:400}
+  .panel .close{position:absolute;top:14px;right:16px;color:var(--dim);cursor:pointer;font-size:16px}
+  .panel .close:hover{color:var(--ink)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;font-size:15px}
+  .row:last-child{margin-bottom:0}
+  input[type=range]{flex:1;accent-color:#fff;cursor:pointer}
+  .seg{display:flex;gap:6px}
+  .seg button{
+    background:none;border:1px solid var(--line);color:var(--dim);font-family:inherit;
+    font-size:12px;padding:5px 12px;cursor:pointer;letter-spacing:.1em;
+  }
+  .seg button.on{border-color:#fff;color:#fff}
+  /* toggle switch */
+  .sw{width:44px;height:22px;border:1px solid var(--line);position:relative;cursor:pointer;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--dim);transition:.15s}
+  .sw.on::after{left:24px;background:#fff}
+  .sw.on{border-color:#fff}
+  .hint{position:fixed;right:18px;bottom:14px;z-index:5;color:#555;font-size:12px;letter-spacing:.15em}
+  @media (max-width:640px){
+    .inner{padding:0 7vw}
+    .panel{left:7vw;right:7vw;width:auto}
+  }
+</style>
+</head>
+<body>
+<canvas id="noise"></canvas>
+<div id="scan"></div>
+<div id="vig"></div>
+
+<div id="stage">
+  <div class="inner">
+    <div class="cam"><span class="rec"></span>CAM-00 · SIGNAL LIVE</div>
+    <h1 id="title">监控室<span class="en">SURVEILLANCE&nbsp;ARCHIVE</span></h1>
+    <div class="rule">— 案例档案库 · CASE FILES —</div>
+    <nav class="menu" id="menu">
+      <div class="mi on" data-act="login"><span class="cur">&gt;&gt;</span>LOGIN</div>
+      <div class="mi" data-act="volume"><span class="cur">&gt;&gt;</span>VOLUME<span class="val" id="volVal"></span></div>
+      <div class="mi" data-act="setting"><span class="cur">&gt;&gt;</span>SETTING</div>
+    </nav>
+  </div>
+</div>
+
+<!-- VOLUME panel -->
+<div class="panel" id="pVol">
+  <span class="close" data-close>&times;</span>
+  <h2>AUDIO · 音量</h2>
+  <div class="row"><span>STATIC&nbsp;HUM</span><input type="range" id="vol" min="0" max="100" value="35"><span id="volNum" style="width:38px;text-align:right">35</span></div>
+  <div class="row"><span>状态</span><span id="volState" style="color:var(--dim)">已静音 · 拖动滑块开启</span></div>
+</div>
+
+<!-- SETTING panel -->
+<div class="panel" id="pSet">
+  <span class="close" data-close>&times;</span>
+  <h2>SETTING · 设置</h2>
+  <div class="row"><span>扫描线 SCANLINES</span><div class="sw on" id="swScan"></div></div>
+  <div class="row"><span>文字抖动 JITTER</span><div class="sw on" id="swJit"></div></div>
+  <div class="row"><span>噪点强度 NOISE</span>
+    <div class="seg" id="segNoise">
+      <button data-v="1">低</button><button data-v="2" class="on">中</button><button data-v="3">高</button>
+    </div>
+  </div>
+</div>
+
+<div class="hint">↑↓ 选择 · ENTER 确认</div>
+
+<script>
+/* ================= settings (persisted) ================= */
+const SET = Object.assign({scan:true, jit:true, noise:2, vol:35},
+  JSON.parse(localStorage.getItem('monitor_room_set')||'{}'));
+function save(){ localStorage.setItem('monitor_room_set', JSON.stringify(SET)); }
+
+/* ================= noise canvas ================= */
+const cv = document.getElementById('noise'), cx = cv.getContext('2d');
+let W,H;
+function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
+addEventListener('resize',resize); resize();
+
+const DENS = {1:.28, 2:.55, 3:.9};
+let last = 0;
+function drawNoise(t){
+  requestAnimationFrame(drawNoise);
+  if(t - last < 66) return;          /* ~15fps, classic CCTV feel */
+  last = t;
+  const d = DENS[SET.noise] || .55;
+  const img = cx.createImageData(W,H), p = img.data;
+  for(let i=0;i<p.length;i+=4){
+    if(Math.random() < d){
+      const v = (Math.random()*Math.random()*200)|0;
+      p[i]=p[i+1]=p[i+2]=v; p[i+3]=255;
+    } /* else leave transparent -> black */
+  }
+  cx.putImageData(img,0,0);
+  /* occasional horizontal roll bar */
+  if(Math.random() < .06){
+    const y=(Math.random()*H)|0, h=2+((Math.random()*8)|0);
+    cx.fillStyle='rgba(255,255,255,.10)';
+    cx.fillRect(0,y,W,h);
+  }
+}
+requestAnimationFrame(drawNoise);
+
+/* ================= audio: static hum ================= */
+let actx=null, gain=null;
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  const len = actx.sampleRate*2, buf = actx.createBuffer(1,len,actx.sampleRate);
+  const ch = buf.getChannelData(0);
+  for(let i=0;i<len;i++) ch[i]=Math.random()*2-1;      /* white noise */
+  const src = actx.createBufferSource(); src.buffer=buf; src.loop=true;
+  const lp = actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+  gain = actx.createGain(); gain.gain.value=0;
+  src.connect(lp).connect(gain).connect(actx.destination);
+  src.start();
+}
+const volSlider=document.getElementById('vol'), volNum=document.getElementById('volNum'),
+      volVal=document.getElementById('volVal'), volState=document.getElementById('volState');
+volSlider.value = SET.vol;
+function applyVol(fromUser){
+  SET.vol = +volSlider.value;
+  volNum.textContent = SET.vol;
+  volVal.textContent  = SET.vol ? '['+SET.vol+']' : '[MUTE]';
+  volState.textContent = SET.vol ? '播放中 · '+SET.vol+'%' : '已静音';
+  volState.style.color = SET.vol ? '#fff' : 'var(--dim)';
+  if(fromUser) initAudio();
+  if(actx && gain) gain.gain.linearRampToValueAtTime(SET.vol/100*.25, actx.currentTime+.15);
+  save();
+}
+volSlider.addEventListener('input',()=>applyVol(true));
+applyVol(false);
+
+/* ================= menu ================= */
+const items=[...document.querySelectorAll('.mi')];
+let idx=0;
+function select(i){
+  idx=(i+items.length)%items.length;
+  items.forEach((el,k)=>el.classList.toggle('on',k===idx));
+}
+items.forEach((el,i)=>{
+  el.addEventListener('mouseenter',()=>select(i));
+  el.addEventListener('click',()=>{ select(i); confirm(); });
+});
+addEventListener('keydown',e=>{
+  const panelOpen = document.querySelector('.panel.show');
+  if(e.key==='ArrowDown'){ select(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowUp'){ select(idx-1); e.preventDefault(); }
+  else if(e.key==='Enter'){ confirm(); }
+  else if(e.key==='Escape' && panelOpen){ panelOpen.classList.remove('show'); }
+});
+function confirm(){
+  const act = items[idx].dataset.act;
+  if(act==='login'){
+    /* CRT 关机闪白后进入档案页 */
+    document.body.style.background='#fff';
+    const f=document.getElementById('vig'); f.style.background='#fff';
+    setTimeout(()=>location.href='archive.html',130);
+  }
+  else if(act==='volume'){ togglePanel('pVol'); }
+  else if(act==='setting'){ togglePanel('pSet'); }
+}
+function togglePanel(id){
+  const p=document.getElementById(id), was=p.classList.contains('show');
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));
+  if(!was) p.classList.add('show');
+}
+document.querySelectorAll('[data-close]').forEach(el=>
+  el.addEventListener('click',e=>e.target.closest('.panel').classList.remove('show')));
+
+/* ================= settings wiring ================= */
+const swScan=document.getElementById('swScan'), swJit=document.getElementById('swJit'),
+      scan=document.getElementById('scan'), title=document.getElementById('title');
+function applySet(){
+  swScan.classList.toggle('on',SET.scan);
+  scan.classList.toggle('off',!SET.scan);
+  swJit.classList.toggle('on',SET.jit);
+  title.classList.toggle('jit',SET.jit);
+  document.querySelectorAll('#segNoise button').forEach(b=>
+    b.classList.toggle('on', +b.dataset.v===SET.noise));
+}
+swScan.addEventListener('click',()=>{ SET.scan=!SET.scan; applySet(); save(); });
+swJit .addEventListener('click',()=>{ SET.jit =!SET.jit ; applySet(); save(); });
+document.querySelectorAll('#segNoise button').forEach(b=>
+  b.addEventListener('click',()=>{ SET.noise=+b.dataset.v; applySet(); save(); }));
+applySet();
+</script>
+</body>
+</html>

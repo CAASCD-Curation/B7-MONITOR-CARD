@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>监控室 · 版本索引</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    min-height:100vh;background:#0b0f0d;color:#d8e6dc;display:flex;align-items:center;justify-content:center;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px);opacity:.35;
+  }
+  .wrap{max-width:720px;width:100%;padding:48px 28px;text-align:center}
+  .status{font-size:12px;letter-spacing:.3em;color:#4ade80;font-family:Consolas,Menlo,monospace}
+  .status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:8px;animation:blink 1.4s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+  h1{font-size:clamp(30px,6vw,46px);letter-spacing:.14em;margin:14px 0 8px;font-weight:800}
+  .sub{color:#7d938a;font-size:14px;margin-bottom:44px}
+  .links{display:flex;flex-direction:column;gap:16px}
+  a{
+    display:block;border:1px solid #1f2b26;background:#121816;border-radius:12px;padding:22px 26px;
+    color:#d8e6dc;text-decoration:none;transition:.2s;text-align:left;
+  }
+  a:hover{border-color:#4ade80;transform:translateY(-3px);box-shadow:0 10px 30px rgba(74,222,128,.10)}
+  .v{font-family:Consolas,Menlo,monospace;font-size:12px;letter-spacing:.2em;color:#4ade80}
+  .t{font-size:19px;font-weight:700;margin:6px 0 4px}
+  .d{color:#7d938a;font-size:13px;line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="status"><span class="dot"></span>ARCHIVE ONLINE · 三个版本已归档</div>
+    <h1>监控室 · 版本索引</h1>
+    <p class="sub">按版本浏览,点击任意一个进入对应展厅</p>
+    <div class="links">
+      <a href="第一版/">
+        <div class="v">V1 · 第一版</div>
+        <div class="t">初版展厅</div>
+        <div class="d">Vite/React 源码工程(需在本地构建后运行)</div>
+      </a>
+      <a href="第二版/">
+        <div class="v">V2 · 第二版</div>
+        <div class="t">CCTV 开始界面 + 案例档案库</div>
+        <div class="d">监控噪点开始菜单,LOGIN 进入 50 个案例卡片档案</div>
+      </a>
+      <a href="第三版/">
+        <div class="v">V3 · 第三版</div>
+        <div class="t">像素风格展厅</div>
+        <div class="d">CRT 屏幕群 + 弹窗详情 + 案例档案</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
