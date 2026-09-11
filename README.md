@@ -1,73 +1,39 @@
-# React + TypeScript + Vite
+# 监控室 MONITOR ROOM — B7 监控卡片
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+复古赛博工业风格的「监控室」主题策展展示网页。暗处凝视明处，被看者不可见监视者——一组关于「观看」与「被观看」的档案。
 
-Currently, two official plugins are available:
+## 内容
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+四大展区，共 49 件档案：
 
-## React Compiler
+| 频道 | 展区 | 数量 |
+| --- | --- | --- |
+| CH-01 | 经典艺术档案 | 12 |
+| CH-02 | 文学意象 | 14 |
+| CH-03 | 社会素材 | 14 |
+| CH-04 | 形式灵感 | 9 |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 视觉
 
-## Expanding the ESLint configuration
+- 高对比暗调展厅、低饱和度、白框发光 CRT 显像管屏幕
+- 全局胶片颗粒噪点 + 扫描线 + 暗角
+- 倾斜悬浮 CRT 屏幕雕塑、环形雷达导航（旋转扫描）
+- 破损屏幕「SIGNAL LOST」故障效果、屏幕闪烁与漂浮动画
+- 金属机械面板、铆钉、螺丝细节
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 技术栈
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+React + TypeScript + Vite + Tailwind CSS + shadcn/ui
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 开发
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # 开发服务器
+npm run build    # 生产构建 → dist/
+npm run preview  # 本地预览构建产物
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 部署
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+`dist/` 为纯静态站点，可直接部署至 GitHub Pages / Vercel / Netlify。
