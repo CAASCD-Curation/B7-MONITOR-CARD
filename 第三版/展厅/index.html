@@ -286,6 +286,36 @@ footer{
   52%{opacity:.6;transform:scaleY(1.01)}60%{opacity:1;filter:none}
   78%{opacity:.85}100%{opacity:1;transform:none;filter:none}
 }
+/* CRT 关机序列 */
+.off-veil{
+  position:absolute; inset:0; z-index:40; pointer-events:none; opacity:0; background:#050606;
+}
+.off-line{
+  position:absolute; left:0; right:0; top:50%; height:3px; z-index:41; opacity:0;
+  background:#f4f4ec;
+  box-shadow:0 0 18px 4px rgba(244,244,236,.9), 0 0 60px 14px rgba(190,220,255,.35);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.crt-off .boot-content{animation:crt-off-collapse .38s cubic-bezier(.5,0,.8,.4) both}
+@keyframes crt-off-collapse{
+  0%{transform:scaleY(1);filter:brightness(1)}
+  30%{transform:scaleY(1);filter:brightness(2.4) contrast(1.5)}
+  70%{transform:scaleY(.012);filter:brightness(3.2)}
+  100%{transform:scaleY(.004);filter:brightness(4);opacity:0}
+}
+.crt-off .off-veil{animation:off-veil .55s steps(2) both}
+@keyframes off-veil{
+  0%{opacity:0}20%{opacity:1}55%{opacity:.85}100%{opacity:1}
+}
+.crt-off .off-line{animation:off-line .55s ease-out both}
+@keyframes off-line{
+  0%,55%{opacity:0;transform:translateY(-50%) scaleY(1)}
+  62%{opacity:1;transform:translateY(-50%) scaleY(1)}
+  85%{opacity:1;transform:translateY(-50%) scaleY(.4)}
+  100%{opacity:0;transform:translateY(-50%) scaleY(.1)}
+}
+
 @media(max-width:600px){.mbody{padding:16px}}
 </style>
 </head>
@@ -315,6 +345,8 @@ footer{
   <div class="mbox" id="mbox">
     <div class="boot-static" aria-hidden></div>
     <div class="boot-line" aria-hidden></div>
+    <div class="off-veil" aria-hidden></div>
+    <div class="off-line" aria-hidden></div>
     <div class="boot-content">
       <div class="mtitlebar">
         <span class="rec"></span>
@@ -444,9 +476,30 @@ const modal = document.getElementById('modal');
 const mbox = document.getElementById('mbox');
 const burst = document.getElementById('burst');
 let opening = false;
+let closing = false;
+
+/* 打乱屏幕阵列（每次关闭弹窗后调用） */
+function shuffleStage(){
+  const kids = Array.from(stage.children);
+  for(let i = kids.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [kids[i], kids[j]] = [kids[j], kids[i]];
+  }
+  kids.forEach(k => {
+    k.style.setProperty('--tilt', (Math.random() * 10 - 5).toFixed(2) + 'deg');
+    k.style.setProperty('--tx', (Math.random() * 18 - 9).toFixed(1) + 'px');
+    k.style.setProperty('--ty', (Math.random() * 14 - 7).toFixed(1) + 'px');
+    k.style.setProperty('--sc', (0.93 + Math.random() * 0.11).toFixed(3));
+    k.style.setProperty('--fdur', (5 + Math.random() * 4).toFixed(2) + 's');
+    k.style.setProperty('--fdel', (-Math.random() * 6).toFixed(2) + 's');
+    k.style.setProperty('--fdrop', (-(6 + Math.random() * 8)).toFixed(1) + 'px');
+    k.style.setProperty('--lit', (0.86 + Math.random() * 0.16).toFixed(2));
+    stage.appendChild(k); /* appendChild 即移动节点 → 同时完成乱序 */
+  });
+}
 
 function openCase(it, cat){
-  if(opening) return;
+  if(opening || closing) return;
   opening = true;
   playPowerOn();
   burst.style.display = 'block';
@@ -472,13 +525,22 @@ function openCase(it, cat){
   }, 620);
 }
 function closeModal(){
-  if(!modal.classList.contains('show')) return;
-  playPowerOff();
-  modal.classList.remove('show');
-  document.body.style.overflow = '';
+  if(!modal.classList.contains('show') || closing || opening) return;
+  closing = true;
+  playPowerOff(); /* 关机咔哒 + 静电消散 */
+  mbox.classList.add('crt-off'); /* CRT 关机：画面纵向坍缩成亮线 + 静电噪点 */
+  setTimeout(() => {
+    modal.classList.remove('show');
+    mbox.classList.remove('crt-off');
+    document.body.style.overflow = '';
+    closing = false;
+    shuffleStage(); /* 回到界面：打乱卡片顺序与布局 */
+  }, 560);
 }
-document.getElementById('mclose').addEventListener('click', closeModal);
-modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+/* 事件委托：✕ 按钮在每次开机时会被克隆重建，委托到 modal 上才不会丢 */
+modal.addEventListener('click', e => {
+  if(e.target === modal || e.target.closest('.mclose')) closeModal();
+});
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 
 /* 深链：#case-N 直接打开对应档案 */
