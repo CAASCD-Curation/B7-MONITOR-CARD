@@ -4,7 +4,7 @@
 
 ## 🌐 在线访问
 
-**https://miffy-1.github.io/B7-MONITOR-JianKongShi_1/**
+**https://caascd-curation.github.io/B7-MONITOR-CARD/**
 
 ## 功能
 
