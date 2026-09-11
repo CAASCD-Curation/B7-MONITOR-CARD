@@ -12,6 +12,7 @@
 | V2 · 第二版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第二版/ | CCTV 开始界面 + 案例档案库 |
 | V3 · 第三版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版/ | 像素风格展厅（CRT 屏幕群 + 弹窗详情） |
 | V1b · 第一版b | https://caascd-curation.github.io/B7-MONITOR-CARD/第一版b/ | 复古 CRT 环形展厅（可直接访问） |
+| V5 · 第五版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第五版/ | 小红书风格卡片瀑布流「监视笔记」（可直接访问） |
 
 ## 🌿 分支结构
 
@@ -30,6 +31,7 @@ index.html      # 版本索引首页
 第一版b/         # 第一版构建产物（可直接访问的 CRT 环形展厅）
 第二版/          # 第二版网页
 第三版/          # 第三版网页（含 pixel/ 像素展厅）
+第五版/          # 第五版网页（小红书风格卡片瀑布流，可直接访问）
 ```
 
 ## 备注
