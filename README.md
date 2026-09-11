@@ -8,11 +8,12 @@
 
 | 版本 | 入口链接 | 说明 |
 | --- | --- | --- |
-| V1 · 第一版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第一版/ | 初版展厅（Vite/React 源码工程，需本地构建） |
+| V1 · 第一版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第一版/dist/ | 复古 CRT 策展首页（可直接访问，分支内为源码工程） |
 | V2 · 第二版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第二版/ | CCTV 开始界面 + 案例档案库 |
-| V3 · 第三版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版/ | 像素风格展厅（CRT 屏幕群 + 弹窗详情） |
+| V3 · 第三版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版/pixel/ | 3D 环形 CRT 展厅，点击屏幕弹窗看档案（可直接访问） |
 | V1b · 第一版b | https://caascd-curation.github.io/B7-MONITOR-CARD/第一版b/ | 复古 CRT 环形展厅（可直接访问） |
 | V5 · 第五版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第五版/ | 3D 螺旋画廊「螺旋档案」（可直接访问） |
+| V6 · 第六版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第六版/pixel/ | 3D 环形展厅 + CRT 开机雪花屏弹窗 + 开机/关机音效（建议戴耳机） |
 
 ## 🌿 分支结构
 
@@ -27,11 +28,13 @@
 
 ```
 index.html      # 版本索引首页
-第一版/          # 第一版源码工程
+第一版/          # 第一版源码工程（dist/ 为构建产物，可直接访问）
 第一版b/         # 第一版构建产物（可直接访问的 CRT 环形展厅）
 第二版/          # 第二版网页
-第三版/          # 第三版网页（含 pixel/ 像素展厅）
+第三版/          # 第三版网页（pixel/ 为 3D 环形展厅，可直接访问）
+第四版/          # 第四版网页
 第五版/          # 第五版网页（3D 螺旋画廊，可直接访问）
+第六版/          # 第六版网页（pixel/ 为 3D 环形展厅 + CRT 开机音效版）
 ```
 
 ## 备注
