@@ -3,56 +3,199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>监控室 · 版本索引</title>
+<title>监控室 · 案例档案库</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    min-height:100vh;background:#0b0f0d;color:#d8e6dc;display:flex;align-items:center;justify-content:center;
-    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
-  }
-  body::after{
-    content:"";position:fixed;inset:0;pointer-events:none;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px);opacity:.35;
-  }
-  .wrap{max-width:720px;width:100%;padding:48px 28px;text-align:center}
-  .status{font-size:12px;letter-spacing:.3em;color:#4ade80;font-family:Consolas,Menlo,monospace}
-  .status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:8px;animation:blink 1.4s infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-  h1{font-size:clamp(30px,6vw,46px);letter-spacing:.14em;margin:14px 0 8px;font-weight:800}
-  .sub{color:#7d938a;font-size:14px;margin-bottom:44px}
-  .links{display:flex;flex-direction:column;gap:16px}
-  a{
-    display:block;border:1px solid #1f2b26;background:#121816;border-radius:12px;padding:22px 26px;
-    color:#d8e6dc;text-decoration:none;transition:.2s;text-align:left;
-  }
-  a:hover{border-color:#4ade80;transform:translateY(-3px);box-shadow:0 10px 30px rgba(74,222,128,.10)}
-  .v{font-family:Consolas,Menlo,monospace;font-size:12px;letter-spacing:.2em;color:#4ade80}
-  .t{font-size:19px;font-weight:700;margin:6px 0 4px}
-  .d{color:#7d938a;font-size:13px;line-height:1.6}
+:root{
+  --bg:#0b0f0d; --panel:#121816; --line:#1f2b26; --ink:#d8e6dc; --dim:#7d938a;
+  --acc:#4ade80; --acc-dim:rgba(74,222,128,.14);
+  --c-art:#4ade80; --c-lit:#38bdf8; --c-form:#c084fc; --c-soc:#fbbf24;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  min-height:100vh; position:relative; overflow-x:hidden;
+}
+/* CRT scanlines */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:60;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);
+  opacity:.35;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px 80px}
+
+/* header */
+header{padding:56px 0 28px;position:relative}
+.status{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.2em;color:var(--acc);font-family:Consolas,Menlo,monospace}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1{font-size:clamp(34px,6vw,58px);letter-spacing:.12em;margin:10px 0 6px;font-weight:800}
+h1 .en{display:block;font-size:.32em;color:var(--dim);letter-spacing:.42em;font-family:Consolas,Menlo,monospace;margin-top:8px}
+.sub{color:var(--dim);font-size:14px;max-width:640px;line-height:1.8;margin-top:10px}
+.stats{display:flex;gap:28px;margin-top:22px;font-family:Consolas,Menlo,monospace}
+.stats b{font-size:26px;color:var(--acc);font-weight:700}
+.stats span{display:block;font-size:11px;color:var(--dim);letter-spacing:.15em;margin-top:2px}
+
+/* toolbar */
+.toolbar{
+  position:sticky;top:0;z-index:50;background:rgba(11,15,13,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);padding:14px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+}
+.filters{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  padding:7px 16px;border-radius:999px;font-size:13px;cursor:pointer;transition:.2s;user-select:none;
+}
+.chip:hover{border-color:var(--acc);color:var(--ink)}
+.chip.on{background:var(--acc-dim);border-color:var(--acc);color:var(--acc)}
+.search{
+  margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;padding:7px 12px;min-width:220px;
+}
+.search input{background:none;border:none;outline:none;color:var(--ink);font-size:13px;width:100%}
+.search input::placeholder{color:var(--dim)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px;margin-top:28px}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  display:flex;flex-direction:column;transition:transform .25s,border-color .25s,box-shadow .25s;cursor:pointer;
+}
+.card:hover{transform:translateY(-5px);border-color:var(--acc);box-shadow:0 12px 40px rgba(74,222,128,.10)}
+.thumb{position:relative;aspect-ratio:16/10;background:#000;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.92);transition:transform .4s}
+.card:hover .thumb img{transform:scale(1.05)}
+.thumb .num{
+  position:absolute;top:10px;left:10px;font-family:Consolas,Menlo,monospace;font-size:11px;
+  background:rgba(0,0,0,.65);border:1px solid var(--line);color:var(--acc);padding:3px 8px;border-radius:6px;letter-spacing:.1em;
+}
+.tag{
+  position:absolute;top:10px;right:10px;font-size:11px;padding:3px 10px;border-radius:999px;
+  background:rgba(0,0,0,.65);backdrop-filter:blur(4px);letter-spacing:.08em;
+}
+.t-art{color:var(--c-art);border:1px solid var(--c-art)} .t-lit{color:var(--c-lit);border:1px solid var(--c-lit)}
+.t-form{color:var(--c-form);border:1px solid var(--c-form)} .t-soc{color:var(--c-soc);border:1px solid var(--c-soc)}
+.body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.title{font-size:17px;font-weight:700;line-height:1.5}
+.meta{font-size:12px;color:var(--dim);display:flex;gap:10px;flex-wrap:wrap;font-family:Consolas,Menlo,monospace}
+.intro{font-size:13px;color:#a9bdb2;line-height:1.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.more{font-size:12px;color:var(--acc);margin-top:auto;padding-top:6px;letter-spacing:.1em}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(4,7,5,.82);backdrop-filter:blur(6px)}
+.modal.show{display:flex}
+.box{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:860px;width:100%;
+  max-height:88vh;overflow:auto;display:grid;grid-template-columns:minmax(240px,340px) 1fr;
+}
+.box .pic{background:#000;min-height:260px}
+.box .pic img{width:100%;height:100%;object-fit:cover}
+.box .txt{padding:26px 28px}
+.box .txt h2{font-size:22px;margin:8px 0 6px}
+.box .txt .intro{-webkit-line-clamp:unset;font-size:14px;white-space:pre-line}
+.close{position:absolute;top:18px;right:22px;font-size:26px;color:var(--dim);cursor:pointer;background:none;border:none}
+.close:hover{color:var(--acc)}
+@media(max-width:700px){.box{grid-template-columns:1fr}.box .pic{max-height:300px}}
+.empty{text-align:center;color:var(--dim);padding:80px 0;font-size:14px;letter-spacing:.2em;display:none}
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;letter-spacing:.12em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:Consolas,Menlo,monospace}
+.logout{position:fixed;top:18px;right:20px;z-index:70;font-family:Consolas,Menlo,monospace;font-size:12px;letter-spacing:.18em;color:var(--dim);text-decoration:none;border:1px solid var(--line);background:rgba(11,15,13,.85);padding:8px 14px;border-radius:8px;transition:.2s}
+.logout:hover{color:var(--acc);border-color:var(--acc)}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="status"><span class="dot"></span>ARCHIVE ONLINE · 三个版本已归档</div>
-    <h1>监控室 · 版本索引</h1>
-    <p class="sub">按版本浏览,点击任意一个进入对应展厅</p>
-    <div class="links">
-      <a href="第一版/dist/">
-        <div class="v">V1 · 第一版</div>
-        <div class="t">像素 3D 展厅</div>
-        <div class="d">像素风监控室首页 · CRT 悬浮屏幕群(已构建,直接可访问)</div>
-      </a>
-      <a href="第二版/">
-        <div class="v">V2 · 第二版</div>
-        <div class="t">CCTV 开始界面 + 案例档案库</div>
-        <div class="d">监控噪点开始菜单,LOGIN 进入 50 个案例卡片档案</div>
-      </a>
-      <a href="第三版/">
-        <div class="v">V3 · 第三版</div>
-        <div class="t">像素风格展厅</div>
-        <div class="d">CRT 屏幕群 + 弹窗详情 + 案例档案</div>
-      </a>
+<a class="logout" href="第二版/menu.html">⏻ MENU</a>
+<div class="wrap">
+  <header>
+    <div class="status"><span class="dot"></span>REC · 实时监控中 · SURVEILLANCE ARCHIVE</div>
+    <h1>监控室<span class="en">THE&nbsp;MONITOR&nbsp;ROOM&nbsp;·&nbsp;CASE&nbsp;ARCHIVE</span></h1>
+    <p class="sub">围绕「监控 / 凝视 / 全景敞视」主题的案例档案库 —— 收录经典艺术档案、文学意象、形式灵感与社会素材四大类共 50 个案例,数据来源于石墨文档《监控室》。</p>
+    <div class="stats">
+      <div><b id="st-total">50</b><span>案例总数 CASES</span></div>
+      <div><b>4</b><span>分类 CATEGORIES</span></div>
+      <div><b>1785–2022</b><span>年代跨度 TIMESPAN</span></div>
     </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="filters" id="filters"></div>
+    <label class="search">⌕ <input id="q" type="text" placeholder="搜索案例 / 作者 / 关键词…"></label>
   </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty">— 无匹配信号 NO SIGNAL —</div>
+
+  <footer>
+    <span>SOURCE: 石墨文档《监控室》协作表格</span>
+    <span>CAMERA-50 · CHANNEL OPEN</span>
+    <span style="width:100%">其他版本 · <a href="第一版/dist/" style="color:var(--dim)">第一版</a> · <a href="第二版/" style="color:var(--dim)">第二版</a> · <a href="第三版/" style="color:var(--dim)">第三版</a></span>
+  </footer>
+</div>
+
+<div class="modal" id="modal">
+  <button class="close" id="close">✕</button>
+  <div class="box" id="box"></div>
+</div>
+
+<script>
+const CASES = [{"num": 1, "category": "经典艺术档案", "title": "《移动迷宫》", "author": "韦斯·鲍尔（导演）", "intro": "一群少年被困高墙围起来的封闭区域，全程被摄像头监控，作为实验对象，世界是人为搭建的牢笼。氛围更残酷、悬疑。", "year": "2014", "source": "", "img": "images/case-01.png"}, {"num": 2, "category": "经典艺术档案", "title": "《黑客帝国》 The Matrix", "author": "拉娜·沃卓斯基、莉莉·沃卓斯基（沃卓斯基姐妹）", "intro": "《黑客帝国》中的母体（Matrix）本身是一套全域监控系统，人类的意识被接入虚拟世界，一举一动都在机器的观测与记录之下。代码数据流、绿色数字雨、系统特工都是监控的具象化身：特工作为系统巡检程序，随时侦测、清除脱离控制的觉醒者。监控不止是观察，更是规训——机器借虚拟幻象禁锢人的认知，在持续监视中维持这套虚假世界的稳定。尼奥等人的反抗，本质就是对这套全方位监控秩序的突围。动都在机器的观测与记录之下。代码数据流、绿色数字雨、系统特工都是监控的具象化身：特工作为系统巡检程序，随时侦测、清除脱离控制的觉醒者。监控不止是观察，更是规训——机器借虚拟幻象禁锢人的认知，在持续监视中维持这套虚假世界的稳定。尼奥等人的反抗，本质就是对这套全方位监控秩序的突围。", "year": "1999", "source": "", "img": "images/case-02.png"}, {"num": 3, "category": "经典艺术档案", "title": "《楚门的世界》", "author": "彼得·威尔（Peter Weir）", "intro": "楚门生活在被搭建的虚假小镇，一切都是真人秀表演。监控室作为操控中枢，导演依靠无数摄像头全天候监视、编排他的人生。楚门识破骗局，拒绝导演挽留，走出虚假世界，奔赴真实生活。", "year": "1998", "source": "", "img": "images/case-03.png"}, {"num": 4, "category": "经典艺术档案", "title": "《夜鹰》 “Nighthawks”", "author": "爱德华·霍普", "intro": "于1942年创作的布面油画，尺寸为 84.1 × 152.4 厘米，现收藏于芝加哥艺术学院，描绘了夜深人静时，一家位于纽约街角的通宵营业餐厅。餐馆内明黄色的灯光从巨大的弧形玻璃窗倾泻而出，与街角的黑暗形成强烈对比。", "year": "1942", "source": "", "img": "images/case-04.png"}, {"num": 5, "category": "经典艺术档案", "title": "《白雪公主》", "author": "迪士尼", "intro": "王后拥有一面魔镜，依靠魔镜持续监视王国之中所有人的样貌，获取关于白雪公主的情报，以此确认谁是世间最美的人，因嫉妒不断加害白雪公主。", "year": "1937", "source": "", "img": "images/case-05.png"}, {"num": 6, "category": "经典艺术档案", "title": "《人类之子》", "author": "雷内·马格利特", "intro": "观众试图窥探苹果后的面容时，会发现男人的眼睛也在苹果边缘“窥视”观者，形成一种双向凝视的张力。这种互动打破了传统绘画的单向性，暗示每个人既是观察者也是被观察者，身份始终处于动态建构中", "year": "1964", "source": "", "img": "images/case-06.png"}, {"num": 7, "category": "文学意象", "title": "《1984》", "author": "乔治·奥威尔 （George Orwell）", "intro": "《1984》是乔治·奥威尔（George Orwell）的反乌托邦巨著，描绘了一个在“老大哥”（Big Brother）极权统治下，通过无处不在的监控、篡改历史和发明“新话”（Newspeak）来彻底禁锢人类思想的恐怖社会。主角温斯顿（Winston Smith）试图寻找真实与自由，最终却惨遭体制抹杀。", "year": "1948", "source": "", "img": "images/case-07.png"}, {"num": 8, "category": "形式灵感", "title": "《绘制工作室》", "author": "布鲁斯·瑙曼", "intro": "7个大型影像从不同的角度记录了他在美国新墨西哥州的工作室的场景，历时数周在夜晚拍摄。画面被反转颠倒，颜色随着太阳升起呈现出不同的色调，因为拍摄的内容极为日常琐碎，因而但凡有老鼠、飞蛾或猫进入画面，就会成为影像中的一个“特殊事件”。", "year": "2022", "source": "", "img": "images/case-08.png"}, {"num": 9, "category": "文学意象", "title": "洞穴隐喻 《理想国》", "author": "柏拉图", "intro": "洞穴里的囚徒自幼被锁链束缚，只能看见洞壁上的影子；洞穴外的火光如同监视光源，囚徒被动观看投影，无法认清真实世界，是经典的凝视与被观测的哲学意象。", "year": "", "source": "", "img": "images/case-09.png"}, {"num": 10, "category": "经典艺术档案", "title": "《鬼妈妈》", "author": "尼尔·盖曼", "intro": "小女孩卡洛琳搬进老旧公寓，鬼妈妈制作纽扣眼人偶，以此监视卡洛琳的生活，窥探她的心愿，诱骗她进入完美的平行幻境，企图夺走她的灵魂。", "year": "2009", "source": "", "img": "images/case-10.png"}, {"num": 11, "category": "文学意象", "title": "《华氏451度》", "author": "雷·布拉德伯里", "intro": "华氏451是纸张燃烧的温度。在这个反乌托邦世界，书籍属于违禁品，消防员不再灭火，职责是焚烧藏书。社会遍布监视系统：机械猎犬追踪藏书者，民众可以匿名举报他人，家家户户墙壁铺满巨型电视屏幕，不断播放同质化娱乐内容，驯化大众，消解独立思想。\n主角蒙塔格是一名焚书消防员，在遇见少女后开始觉醒，偷偷收藏书籍。他遭到系统监视与追捕，逃亡后遇见一群流亡者，他们把整本书记在脑中，以肉身保存文明火种。", "year": "1953", "source": "", "img": "images/case-11.png"}, {"num": 12, "category": "文学意象", "title": "全景监狱", "author": "米歇尔·福柯", "intro": "全景监狱(Panopticon)源于英国哲学家杰里米·边沁(Jeremy Bentham)1785年设计的圆形监狱方案，后经米歇尔·福柯在《规训与惩罚》(1975)中重新阐释，成为分析现代权力的经典隐喻。这种监狱呈环形，中央设一座瞭望塔，塔内能看到每一间囚室，但囚犯看不到塔内是否有人监视。结果，囚犯因为「可能被看见」而时刻自我约束一-权力不需要真正行使，就已经生效。福柯称之为「权力的眼睛」:监视不再是少数人对多数人的压制，而成为人人自我规训的机制。", "year": "1785", "source": "", "img": "images/case-12.png"}, {"num": 13, "category": "经典艺术档案", "title": "《楼下的房客》", "author": "崔震东", "intro": "房东继承一栋老旧公寓，顶楼房间就是实体监控室，墙面布满监控屏幕，公寓所有房间都暗藏摄像头。房东躲在监控室，不间断监视所有租客的私生活，以旁观者的视角窥探他人秘密，甚至暗中设计挑拨，操控租客的命运，把监视变成一场人性实验。", "year": "2016", "source": "", "img": "images/case-13.png"}, {"num": 14, "category": "经典艺术档案", "title": "《星际穿越》", "author": "阿瑟·克拉克", "intro": "未来地球遭遇粮食危机，库珀坠入黑洞后进入五维超立方体。这个空间如同巨型观测室，他可以看见过去女儿卧室的全部时间片段，以引力为媒介监视、观测过往时空，向过去传递关键数据拯救人类。", "year": "2014", "source": "", "img": "images/case-14.png"}, {"num": 15, "category": "经典艺术档案", "title": "《寄生虫》", "author": "奉俊昊", "intro": "富人别墅装有监控，底层男子藏匿于别墅地下密室，在暗处监视楼上一家人，不同阶层彼此窥探、互相提防，形成复杂的凝视关系。", "year": "2019", "source": "", "img": "images/case-15.png"}, {"num": 16, "category": "经典艺术档案", "title": "《窃听风暴》", "author": "弗洛里安·亨克尔·冯·多纳斯马尔克", "intro": "1984年冷战时期的东德，秘密警察魏斯曼在阁楼搭建密闭监控室，依靠窃听设备全天候监视剧作家与演员妻子的私生活，记录二人一言一行。长久的监视中，监视者良知觉醒，违背上级命令，暗中保护这对艺术家。", "year": "2006", "source": "", "img": "images/case-16.png"}, {"num": 17, "category": "经典艺术档案", "title": "《少数派报告》", "author": "菲利普·迪克", "intro": "2054年，预防犯罪中心搭建巨型中控监控室，依靠三位先知的脑波影像，监视并预判尚未发生的凶杀；城市遍布虹膜扫描摄像头，全天候追踪民众行踪。主管安德顿被系统预判为杀人犯，被迫逃亡，揭露这套监视系统存在被人为篡改的漏洞。", "year": "2002", "source": "", "img": "images/case-17.png"}, {"num": 18, "category": "形式灵感", "title": "议会圆桌俯瞰", "author": "", "intro": "巨大的议会圆桌俯瞰，所有议员呈同心圆排列，政治监视的全景敞视空间。", "year": "", "source": "", "img": "images/case-18.png"}, {"num": 19, "category": "形式灵感", "title": "《无限镜屋》", "author": "草间弥生", "intro": "这个大型的镜面装置是她的个人展览“楼层秀”的一部分，该展览于1965年11月在纽约卡斯特兰美术馆开幕。2010年代中期，她镜屋中拍摄的自拍照开始如潮水般席卷Instagram，呈现出令人着迷的普遍性。", "year": "1965", "source": "", "img": "images/case-19.png"}, {"num": 20, "category": "形式灵感", "title": "雷达扫描", "author": "", "intro": "一条亮线绕圆心旋转，扫出光点目标，经典的“搜索-锁定”视觉心理。", "year": "", "source": "", "img": "images/case-20.png"}, {"num": 21, "category": "形式灵感", "title": "鱼眼镜头", "author": "", "intro": "超广角纺锤形畸变，拉伸空间，类似监控视角，营造荒诞夸张的视觉艺术氛围。", "year": "", "source": "", "img": "images/case-21.png"}, {"num": 22, "category": "形式灵感", "title": "监控识别人像", "author": "", "intro": "数据框和不同数据显示同时识别锁定人像，类似监控视角读取信息。", "year": "", "source": "", "img": "images/case-22.png"}, {"num": 23, "category": "形式灵感", "title": "热力图", "author": "", "intro": "以色块深浅映射数据密度，直观呈现热点分布与强弱差异。", "year": "", "source": "", "img": "images/case-23.png"}, {"num": 24, "category": "社会素材", "title": "ECMO(体外膜肺氧合)", "author": "", "intro": "ECMO的操控控制台，是重症医学的生命监控中枢。医护人员在控制台前持续监视患者的血氧、血压、血流、膜肺运转等全部生命数据，通过屏幕实时观测人体内部的生命状态，如同医疗版的监控室。", "year": "", "source": "", "img": "images/case-24.png"}, {"num": 25, "category": "社会素材", "title": "控制室", "author": "", "intro": "控制室是监控室的功能升级与权力闭环形态，以「实时监视+远端操控」为核心构成系统中枢，值守者在观测前端状态的同时可直接下达指令、干预运行，将凝视权力转化为实际管控动作。", "year": "", "source": "", "img": "images/case-25.png"}, {"num": 26, "category": "社会素材", "title": "机场塔台", "author": "", "intro": "机场塔台是矗立在机场场区的高空管制中枢，以顶层360°全景管制舱为核心，结合场面监视雷达、航管显示屏与无线电通信系统，同时完成对机场地面及近空飞行器的全景监视与实时指挥，是「全景敞视」理念最经典的建筑化落地形态。", "year": "", "source": "", "img": "images/case-26.png"}, {"num": 27, "category": "社会素材", "title": "赌场监控", "author": "", "intro": "赌场监控室被称为「空中之眼」，是博彩业全域反舞弊与风险管控的隐形权力中枢，隐匿于赌场公共区域之外的封闭暗室，通过数千台无死角高清探头与AI行为识别系统，全程监视每一张赌桌、每一位赌客与荷官的动作，在拼接大屏前完成对全场赌局的全景凝视与分级处置。", "year": "", "source": "", "img": "images/case-27.png"}, {"num": 28, "category": "社会素材", "title": "手术室示教系统", "author": "", "intro": "手术室示教系统是医疗教学领域的专业化监控室，以手术室前端高清采集设备为探头，以院端示教控制室为中枢，实时传输术野画面、生命体征与设备影像，在暗室大屏前完成对手术全程的全景凝视、教学观摩与远程指导，是知识权力视角下的医疗操作监控体系。", "year": "", "source": "", "img": "images/case-28.png"}, {"num": 29, "category": "社会素材", "title": "美国恶魔岛监狱瞭望塔", "author": "", "intro": "恶魔岛监狱瞭望塔是近代监狱安防体系的高空监视中枢，矗立于监狱围墙与海岸线的制高点，以全视野岗亭为核心，配合探照灯与枪械警戒，24小时全域扫描监区与周边海域，是福柯「全景敞视监狱」最经典的现实建筑原型之一。", "year": "", "source": "", "img": "images/case-29.png"}, {"num": 30, "category": "社会素材", "title": "森林防火瞭望塔", "author": "", "intro": "森林防火瞭望塔是林区防灾体系的前沿高空监视节点，矗立于山脊、林缘制高点，以顶层全景瞭望台为核心，结合目视观测与光电监测设备全天候扫描全域山林，实现火情早发现、早预警。", "year": "", "source": "", "img": "images/case-30.png"}, {"num": 31, "category": "社会素材", "title": "ICU重症监护室", "author": "", "intro": "ICU重症监护室是现代重症医学的核心生命监控中枢，以多参数生命体征监护网络为基础，对危重患者的心肺、代谢等全身生理状态进行24小时不间断的全景监测与实时干预。", "year": "", "source": "", "img": "images/case-31.png"}, {"num": 32, "category": "社会素材", "title": "地震监测台网中心", "author": "", "intro": "地震监测台网中心是地质灾害防控体系的国家级监控中枢，以遍布全域的无人值守地震台站为前端感知节点，在中央地下监控大厅汇集实时地震波数据，完成震情速报、预警发布与应急联动调度。", "year": "", "source": "", "img": "images/case-32.png"}, {"num": 33, "category": "社会素材", "title": "气象站", "author": "", "intro": "气象站是大气监测体系的分布式前端观测节点与中央预报监控中枢的统称，以地面自动站、天气雷达、气象卫星组成空天地一体化感知网络，在中央气象台会商监控大厅完成全域气象数据的汇集、研判与预警发布，是全景敞视模式在大气科学领域的典型落地形态。", "year": "", "source": "", "img": "images/case-33.png"}, {"num": 34, "category": "文学意象", "title": "《哈利波特》厄里斯魔镜", "author": "J·K·罗琳", "intro": "厄里斯魔镜，是《哈利·波特》里极具象征意味的魔法器物。镜面不会映照现实样貌，而是投射出人心底最隐秘、最炽热的渴望。镜子可以满足人的幻想，把执念化作看得见的幻象，却无法带来真实。它像一面欲望的照妖镜，让人沉溺于虚幻的美好，却会使人逃避当下的现实。人若是一味沉迷镜中的幻象，便会被执念困住，止步不前。", "year": "", "source": "", "img": "images/case-34.png"}, {"num": 35, "category": "社会素材", "title": "演播厅导播间", "author": "", "intro": "演播厅导播间是广播电视与节目制作领域的内容监控指挥中枢，以演播厅多机位拍摄系统为前端采集端，以封闭导播间的多屏监看与切换台为核心，全程监视舞台演出画面与现场状态，实时完成镜头切换、音控调度与播出把控。", "year": "", "source": "", "img": "images/case-35.png"}, {"num": 36, "category": "形式灵感", "title": "老式CRT显示器", "author": "", "intro": "用复古的颗粒感和雪花屏，模拟时代监控的“低保真”怀旧质感。", "year": "", "source": "", "img": "images/case-36.png"}, {"num": 37, "category": "社会素材", "title": "X光安检机画面", "author": "", "intro": "X光安检机画面是公共安防体系的穿透式监控终端，以低剂量X光穿透物体表层生成内部结构影像，在安检监控台屏幕上呈现，将监视维度从外部行为延伸至物体内部隐秘空间，是全景敞视模式在安防入口场景的典型落地形态。", "year": "", "source": "", "img": "images/case-37.png"}, {"num": 38, "category": "文学意象", "title": "单向玻璃", "author": "", "intro": "单向玻璃是监控室权力结构的物理具象与文学意象载体，以单向透视的镀层玻璃实现视线的不对等穿透，将监控室“暗处凝视明处、被看者不可见监视者”的核心权力逻辑凝固为空间界面，在文艺叙事中成为隐形监视、权力不对等与个体异化的经典视觉符号。", "year": "", "source": "", "img": "images/case-38.png"}, {"num": 39, "category": "社会素材", "title": "保安室", "author": "", "intro": "保安室是基层社会安防体系的微型监控中枢，是全景监视模式下沉至社区、园区、楼宇入口的终端值守节点，以视频监控系统、门禁闸机与对讲调度设备为核心，值守人员在封闭岗亭内完成对出入口及周边公共区域的全天候监视、出入核验与应急处置，是监控室意象最日常化、最普及的现实落地形态。", "year": "", "source": "", "img": "images/case-39.png"}, {"num": 40, "category": "文学意象", "title": "蜘蛛网", "author": "", "intro": "蜘蛛网是监控室最本源的文学意象，二者共享完全同构的底层逻辑——以隐形之网覆盖全域，以暗处中枢掌控全局，将所有明处的动静尽数收束于中心，是监视行为在自然与人文中的两种镜像表达。", "year": "", "source": "", "img": "images/case-40.png"}, {"num": 41, "category": "文学意象", "title": "核电站主控室", "author": "", "intro": "核电站主控室是核电系统的最高运行与安全指挥中枢，是监控室在核心工业领域的顶级形态，以覆盖全厂区的传感器与仪表网络为前端感知端，以封闭独立的主控大厅为核心，24小时不间断监视反应堆及全系统工况，实时完成功率调节、流程管控与事故应急处置，是集全景监视与核心操控于一体的工业级管控中枢。", "year": "", "source": "", "img": "images/case-41.png"}, {"num": 42, "category": "文学意象", "title": "养鸡场环控器屏幕", "author": "", "intro": "养鸡场环控器屏幕是规模化养殖里的小型环境监控终端，属于工业监控体系下沉到农业场景的简易控制室。鸡舍内遍布温湿度、氨气传感器，实时采集棚内环境数据，汇总到这块触控屏，24小时监测棚内状态，自动启停风机、湿帘、照明，参数超标时触发声光报警，完成监测与自动调控。", "year": "", "source": "", "img": "images/case-42.png"}, {"num": 43, "category": "社会素材", "title": "高考监控", "author": "", "intro": "高考监控是教育考试公平保障体系的多级监控中枢。考场内布设高清摄像头，画面逐级汇集到考点、区县、省市指挥中心，实时巡查考场动态，AI识别异常行为，视频全程存档备查，是监控室意象在教育考试场景的落地。", "year": "", "source": "", "img": "images/case-43.png"}, {"num": 44, "category": "社会素材", "title": "数据中心NOC（网络运营中心）", "author": "", "intro": "数据中心是放大量服务器的机房，配套一套完整监控系统，24小时盯着设备、环境、安全，防止宕机、起火、入侵，不用人一直守在机房。发现异常自动告警（短信、弹窗），提前处理，避免服务器停机、数据丢失。", "year": "", "source": "", "img": "images/case-44.png"}, {"num": 45, "category": "形式灵感", "title": "镜面反射", "author": "", "intro": "通过镜子的重复与碎裂，呈现出多重维度的美感，像是时间与空间的交错。", "year": "", "source": "", "img": "images/case-45.png"}, {"num": 46, "category": "文学意象", "title": "文字狱", "author": "", "intro": "古代专制王朝以文字禁忌为核心的思想监视体系，通过官民告发、书籍审查、文网罗织实现全域文字筛查，以皇权为中枢构成隐形的文字监控网络，对触发禁忌者施以重刑，是前数字时代的关键词式全景监视。", "year": "", "source": "", "img": "images/case-46.png"}, {"num": 47, "category": "文学意象", "title": "天眼系统", "author": "", "intro": "全域公共空间布设海量智能摄像探头，与各级公安指挥监控室形成层级化监视网络，AI识别技术配合实时回传画面，实现全天候无死角的全景凝视，后端监控大屏构成全域公共安全的监视中枢。", "year": "", "source": "", "img": "images/case-47.png"}, {"num": 48, "category": "文学意象", "title": "大数据监听", "author": "", "intro": "以大数据技术为核心的数字监视中枢，通过预设关键词库、语义识别与全网数据爬取，7×24小时不间断监听网络舆情与信息动态，在中控大屏上实时呈现预警、词云与数据热力图，实现全域范围的无形全景监视。", "year": "", "source": "", "img": "images/case-48.png"}, {"num": 49, "category": "文学意象", "title": "手机信息泄露", "author": "", "intro": "智能手机作为随身隐形采集终端，通过权限滥用、恶意程序、网络窃取等渠道持续泄露位置、通信、行为等隐私数据，海量个体数据实时汇入大数据关键词监控室，构成全域数字监视的微观前端节点。", "year": "", "source": "", "img": "images/case-49.png"}, {"num": 50, "category": "文学意象", "title": "《阿莱夫》", "author": "博尔赫斯", "intro": "阿莱夫是一个藏在地下室的微小球体。在这个极小的点里，能看见宇宙全部空间，世间万物的过去、现在与未来同时并存，一切景象互不重叠、完整共现。它象征无限被收纳于方寸之间：有限的容器承载无穷世界。目睹阿莱夫的人会窥见宇宙全貌，可这种震撼的终极体验，难以用语言完整转述。故事借这个奇幻意象，探讨无限、时间、记忆与文字描摹世界的局限。", "year": "1949", "source": "", "img": "images/case-50.png"}];
+const CATCLASS = {"经典艺术档案":"t-art","文学意象":"t-lit","形式灵感":"t-form","社会素材":"t-soc"};
+const cats = ["全部", ...new Set(CASES.map(c=>c.category))];
+let active = "全部", kw = "";
+
+const filtersEl = document.getElementById("filters");
+cats.forEach(c=>{
+  const b=document.createElement("button");
+  b.className="chip"+(c==="全部"?" on":"");
+  b.textContent=c;
+  b.onclick=()=>{active=c;document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x.textContent===c));render();};
+  filtersEl.appendChild(b);
+});
+document.getElementById("q").oninput=e=>{kw=e.target.value.trim();render();};
+
+function match(c){
+  if(active!=="全部"&&c.category!==active)return false;
+  if(!kw)return true;
+  return (c.title+c.author+c.intro+c.category+c.year).includes(kw);
+}
+function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+
+function render(){
+  const g=document.getElementById("grid");
+  const list=CASES.filter(match);
+  document.getElementById("empty").style.display=list.length?"none":"block";
+  g.innerHTML=list.map(c=>`
+    <div class="card" onclick="openCase(${c.num})">
+      <div class="thumb">
+        <img loading="lazy" src="${c.img}" alt="${esc(c.title)}">
+        <span class="num">CAM-${String(c.num).padStart(2,"0")}</span>
+        <span class="tag ${CATCLASS[c.category]||""}">${c.category}</span>
+      </div>
+      <div class="body">
+        <div class="title">${esc(c.title)}</div>
+        <div class="meta">${c.author?`<span>✎ ${esc(c.author)}</span>`:""}${c.year?`<span>◷ ${c.year}</span>`:""}</div>
+        <div class="intro">${esc(c.intro)}</div>
+        <div class="more">查看完整档案 →</div>
+      </div>
+    </div>`).join("");
+}
+function openCase(n){
+  const c=CASES.find(x=>x.num===n); if(!c)return;
+  document.getElementById("box").innerHTML=`
+    <div class="pic"><img src="${c.img}" alt="${esc(c.title)}"></div>
+    <div class="txt">
+      <span class="tag ${CATCLASS[c.category]||""}" style="position:static">${c.category}</span>
+      <h2>${esc(c.title)}</h2>
+      <div class="meta">${c.author?`<span>✎ ${esc(c.author)}</span>`:""}${c.year?`<span>◷ ${c.year}</span>`:""}${c.source?`<span>⌖ ${esc(c.source)}</span>`:""}</div>
+      <p class="intro" style="margin-top:14px">${esc(c.intro)}</p>
+    </div>`;
+  document.getElementById("modal").classList.add("show");
+  document.body.style.overflow="hidden";
+}
+document.getElementById("close").onclick=()=>{document.getElementById("modal").classList.remove("show");document.body.style.overflow="";};
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal"){document.getElementById("modal").classList.remove("show");document.body.style.overflow="";}};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){document.getElementById("modal").classList.remove("show");document.body.style.overflow="";}});
+render();
+</script>
 </body>
 </html>
