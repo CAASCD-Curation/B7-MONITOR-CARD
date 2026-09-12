@@ -758,41 +758,35 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal();
   const W = 26, H = 18, CX = 13, CY = 9, RX = 12, RY = 7;
   const RED = '#d92b2b', RED_D = '#8f1414', DARK = '#151515', WHITE = '#ededed';
 
-  function drawEye(open){ /* open: 0(闭眼) ~ 1(睁眼) */
+  function drawEye(open){ /* open: 0(闭眼) ~ 1(睁眼) — 纯红瞳，无眼白 */
     g.clearRect(0, 0, W, H);
-    const ry = Math.max(0.7, RY * open);
-    for(let y = 0; y < H; y++){
-      for(let x = 0; x < W; x++){
-        const dx = (x - CX) / RX, dy = (y - CY) / ry;
-        if(dx * dx + dy * dy <= 1){
-          g.fillStyle = WHITE;
-          g.fillRect(x, y, 1, 1);
-        }
-      }
-    }
     if(open > 0.3){
-      const ir = 5 * open + 0.6; /* 红瞳半径随睁眼度 */
+      const ir = (5.4 * open + 0.6) * 1.18; /* 去掉眼白后红瞳略放大 */
       for(let y = 0; y < H; y++){
         for(let x = 0; x < W; x++){
-          const d = Math.hypot(x - CX, y - CY);
-          if(d <= ir){
-            g.fillStyle = d <= ir * 0.42 ? DARK : (d >= ir - 1.1 ? RED_D : RED);
+          const dx = (x - CX) / (ir * 1.45), dy = (y - CY) / ir; /* 微椭圆更像眼睛 */
+          const d = Math.hypot(dx, dy);
+          if(d <= 1){
+            const ring = d > 0.82;
+            g.fillStyle = ring ? RED_D : (d <= 0.4 ? DARK : RED);
             g.fillRect(x, y, 1, 1);
           }
         }
       }
-      g.fillStyle = WHITE; /* 高光点 */
+      g.fillStyle = '#ff6b6b'; /* 高光点 */
       g.fillRect(CX - 2, CY - 3, 1, 1);
-    }else{ /* 闭眼：眼睑暗线 + 中央红缝 */
-      for(let x = CX - 11; x <= CX + 11; x++){ g.fillStyle = DARK; g.fillRect(x, CY, 1, 1); }
-      for(let x = CX - 3; x <= CX + 3; x++){ g.fillStyle = RED_D; g.fillRect(x, CY, 1, 1); }
+    }else{ /* 闭眼：中央红缝 */
+      for(let x = CX - 4; x <= CX + 4; x++){ g.fillStyle = RED_D; g.fillRect(x, CY, 1, 1); }
     }
   }
 
-  let mx = -100, my = -100, cx = -100, cy2 = -100, open = 1, blinking = false, visible = false;
+  let open = 1, blinking = false, visible = false;
   drawEye(1);
 
-  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; if(!visible){ visible = true; cv.style.opacity = '1'; } });
+  document.addEventListener('mousemove', e => { /* 即时跟随，无延迟 */
+    cv.style.transform = `translate(${Math.round(e.clientX - 39)}px,${Math.round(e.clientY - 27)}px)`;
+    if(!visible){ visible = true; cv.style.opacity = '1'; }
+  });
   document.documentElement.addEventListener('mouseleave', () => { visible = false; cv.style.opacity = '0'; });
 
   function blink(){
@@ -809,13 +803,6 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal();
   }
   document.addEventListener('pointerdown', blink); /* 点击眨眼 */
   (function auto(){ setTimeout(() => { blink(); auto(); }, 2600 + Math.random() * 3200); })(); /* 随机自主眨眼 */
-
-  (function loop(){
-    cx += (mx - cx) * 0.42; cy2 += (my - cy2) * 0.42; /* 轻微跟随延迟 */
-    cv.style.transform = `translate(${Math.round(cx - 39)}px,${Math.round(cy2 - 27)}px)`;
-    if(!blinking) drawEye(open);
-    requestAnimationFrame(loop);
-  })();
 })();
 
 /* 深链：#case-N 直接打开对应档案 */
