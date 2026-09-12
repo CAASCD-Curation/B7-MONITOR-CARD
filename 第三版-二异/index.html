@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>监控室 MONITOR ROOM · B7</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --bg:#07080a; --panel:#101315; --ink:#efefe7; --dim:#a8b8a0; --dark:#7d8078;
+  --line:#23272b; --acc:#c8d6c0; --red:#b8543f;
+  --px:"FusionPixel","Courier New",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--px);
+  font-size:12px; -webkit-font-smoothing:none; font-smooth:never;
+  min-height:100vh; overflow-x:hidden;
+  cursor:crosshair;
+}
+/* ── 胶片颗粒 + 暗角 ─────────────────────────── */
+.grain{
+  position:fixed; inset:-60px; z-index:90; pointer-events:none; opacity:.55;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain-shift .42s steps(3) infinite;
+}
+@keyframes grain-shift{
+  0%{transform:translate(0,0)} 33%{transform:translate(-28px,16px)}
+  66%{transform:translate(20px,-24px)} 100%{transform:translate(0,0)}
+}
+.vignette{
+  position:fixed; inset:0; z-index:89; pointer-events:none;
+  background:radial-gradient(ellipse 75% 65% at 50% 42%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+/* 全局扫描线 */
+.scan-global{
+  position:fixed; inset:0; z-index:88; pointer-events:none; opacity:.28;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+}
+/* 偶发闪烁 */
+.flicker-all{animation:all-flicker 7s steps(1) infinite}
+@keyframes all-flicker{
+  0%,93.9%,95.3%,100%{opacity:1} 94%{opacity:.86} 94.6%{opacity:.97}
+}
+
+/* ── 标题 ─────────────────────────── */
+header{
+  text-align:center; padding:46px 16px 8px; position:relative; z-index:10;
+}
+h1{
+  font-size:clamp(36px,6vw,48px); letter-spacing:.14em; font-weight:800;
+  color:var(--ink);
+  text-shadow:3px 3px 0 #000, 0 0 22px rgba(242,242,234,.28);
+}
+h1 .en{
+  display:block; font-size:12px; color:var(--dim); letter-spacing:.46em; margin-top:10px; font-weight:400;
+}
+.hint{
+  margin-top:14px; font-size:12px; letter-spacing:.32em; color:var(--dark);
+  animation:hint-blink 2.6s steps(1) infinite;
+}
+@keyframes hint-blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── 屏幕阵列 ─────────────────────────── */
+.stage{
+  position:relative; z-index:10;
+  max-width:1560px; margin:26px auto 0; padding:10px 34px 30px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:34px 30px;
+  transform-style:preserve-3d; perspective:1400px;
+}
+@media(max-width:1100px){.stage{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.stage{grid-template-columns:repeat(2,1fr);gap:22px 16px;padding:10px 16px 24px}}
+@media(max-width:420px){.stage{grid-template-columns:1fr}}
+
+/* CRT 整机 */
+.crt{
+  position:relative; cursor:pointer; border:0; background:transparent; padding:0; text-align:left;
+  transform:rotate(var(--tilt,0deg)) translate(var(--tx,0px), var(--ty,0px)) scale(var(--sc,1));
+  animation:float-y var(--fdur,6s) ease-in-out var(--fdel,0s) infinite;
+  transition:transform .35s cubic-bezier(.2,.8,.3,1.2), filter .3s;
+  will-change:transform;
+  filter:brightness(var(--lit,.94));
+}
+.crt:hover{
+  transform:rotate(var(--tilt,0deg)) translate(var(--tx,0px), var(--ty,0px)) scale(calc(var(--sc,1) * 1.04)) translateY(-7px);
+  filter:brightness(1.12);
+  z-index:20;
+}
+@keyframes float-y{
+  0%,100%{margin-top:0} 50%{margin-top:var(--fdrop,-9px)}
+}
+/* 金属 bezel */
+.bezel{
+  background:linear-gradient(160deg,#2b3034 0%,#1a1e21 40%,#101315 100%);
+  border:1px solid #000; border-radius:5px;
+  padding:9px 9px 26px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 -2px 4px rgba(0,0,0,.6),
+    0 10px 26px rgba(0,0,0,.55),
+    0 0 22px rgba(190,210,255,.05);
+  position:relative;
+}
+.bezel::after{ /* 底部指示灯 */
+  content:""; position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  width:5px; height:5px; border-radius:50%;
+  background:#3f5c46; box-shadow:0 0 6px rgba(110,220,140,.5);
+  animation:led 3.2s steps(1) infinite;
+}
+@keyframes led{0%,100%{opacity:1}47%{opacity:1}50%{opacity:.25}53%{opacity:1}}
+/* 显像管屏幕 */
+.screen{
+  position:relative; aspect-ratio:4/3; overflow:hidden; background:#000;
+  border-radius:3px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.07),
+    inset 0 0 34px rgba(0,0,0,.75),
+    0 0 18px rgba(200,220,255,.08);
+}
+.screen img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  filter:saturate(.82) contrast(1.1) brightness(.9);
+}
+.screen::before{ /* 扫描线 */
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.26) 0 1px, transparent 1px 3px);
+}
+.screen::after{ /* 玻璃弧光 */
+  content:""; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:radial-gradient(ellipse 90% 70% at 50% 30%, rgba(255,255,255,.06), transparent 60%);
+}
+.rollband{ /* 缓缓滚动的亮带 */
+  position:absolute; left:0; right:0; height:18%; z-index:3; pointer-events:none;
+  background:linear-gradient(to bottom, transparent, rgba(230,240,255,.05), transparent);
+  animation:rollband 5.5s linear infinite;
+}
+@keyframes rollband{from{top:-20%}to{top:110%}}
+
+/* 屏幕标签 */
+.tag-no{
+  position:absolute; top:7px; left:8px; z-index:6;
+  font-size:12px; letter-spacing:.12em; color:var(--acc);
+  text-shadow:1px 1px 0 #000; display:flex; align-items:center; gap:5px;
+}
+.tag-no i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(184,84,63,.8);animation:led 1.8s steps(1) infinite}
+.tag-ch{
+  position:absolute; top:7px; right:8px; z-index:6;
+  font-size:12px; letter-spacing:.12em; color:var(--dark); text-shadow:1px 1px 0 #000;
+}
+.tag-cap{
+  position:absolute; bottom:6px; left:8px; z-index:6;
+  font-size:12px; letter-spacing:.1em; color:var(--ink); text-shadow:1px 1px 0 #000,0 0 8px rgba(0,0,0,.9);
+}
+/* 损坏屏幕：雪花噪点 */
+.crt.broken .screen img{display:none}
+.crt.broken .screen{background:#0a0b0c}
+.static-fill{
+  position:absolute; inset:0; z-index:2;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:static-jump .12s steps(2) infinite; opacity:.5;
+}
+@keyframes static-jump{0%{transform:translate(0,0)}50%{transform:translate(-14px,9px)}100%{transform:translate(8px,-7px)}}
+.no-signal{
+  position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center;
+  font-size:12px; letter-spacing:.4em; color:rgba(239,239,231,.75); text-shadow:1px 1px 0 #000;
+  animation:hint-blink 1.6s steps(1) infinite;
+}
+
+footer{
+  position:relative; z-index:10; text-align:center; padding:26px 0 34px;
+  font-size:12px; letter-spacing:.3em; color:#4a4d48;
+}
+
+/* ── 雪花故障闪动（全屏转场） ─────────────────── */
+.glitch-burst{
+  position:fixed; inset:0; z-index:200; background:#050606; overflow:hidden;
+  animation:burst-in .05s steps(1) both;
+}
+.glitch-burst .gnoise{
+  position:absolute; inset:-40px;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.08) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:burst-noise .09s steps(2) infinite;
+}
+@keyframes burst-noise{
+  0%{transform:translate(0,0);filter:contrast(1.4)}
+  25%{transform:translate(-30px,18px);filter:contrast(2) invert(.08)}
+  50%{transform:translate(24px,-26px);filter:contrast(1.1) brightness(1.3)}
+  75%{transform:translate(-14px,-12px);filter:contrast(1.8) invert(.15)}
+  100%{transform:translate(10px,20px);filter:contrast(1.4)}
+}
+.glitch-burst .gband{
+  position:absolute; left:0; right:0; height:22%; top:30%;
+  background:linear-gradient(to bottom, transparent, rgba(242,242,234,.16), transparent);
+  animation:burst-band .12s steps(3) infinite; mix-blend-mode:screen;
+}
+@keyframes burst-band{0%{top:8%}33%{top:52%}66%{top:74%}100%{top:20%}}
+.glitch-burst .gtext{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  color:rgba(242,242,234,.85); font-size:clamp(12px,2vw,24px); letter-spacing:.5em;
+  text-shadow:2px 0 rgba(184,84,63,.8), -2px 0 rgba(120,160,200,.8);
+  animation:burst-text .1s steps(2) infinite;
+}
+@keyframes burst-text{
+  0%,100%{opacity:1;transform:translate(-50%,-50%) skewX(0)}
+  50%{opacity:.55;transform:translate(calc(-50% + 4px),-50%) skewX(-4deg)}
+}
+@keyframes burst-in{from{opacity:0}to{opacity:1}}
+
+/* ── 详情弹窗（CRT 开机进入） ─────────────────── */
+.modal{
+  position:fixed; inset:0; z-index:150; display:none;
+  align-items:center; justify-content:center; padding:22px;
+  background:rgba(3,4,5,.85); backdrop-filter:blur(3px);
+}
+.modal.show{display:flex}
+.mbox{
+  position:relative; width:min(880px,100%); max-height:88vh; overflow-y:auto;
+  background:var(--panel); border:1px solid #000; border-radius:6px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07);
+  animation:none;
+}
+.mbox::-webkit-scrollbar{width:10px}
+.mbox::-webkit-scrollbar-thumb{background:#23272a;border:2px solid #0b0d0f}
+.mtitlebar{
+  position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:#14171a; border-bottom:3px solid #060708;
+}
+.mtitlebar .rec{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.mtitlebar .code{font-size:12px; letter-spacing:.16em; color:var(--dim)}
+.mclose{
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--dim);
+  width:26px; height:26px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+}
+.mclose:hover{color:var(--ink); border-color:var(--dim)}
+.mbody{padding:22px 26px 26px}
+.mscreen{
+  position:relative; max-width:580px; margin:0 auto 24px; background:#000;
+  border:6px solid #1a1e21; border-radius:4px; overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 30px rgba(0,0,0,.7), 0 0 24px rgba(200,220,255,.07);
+}
+.mscreen img{width:100%; height:auto; max-height:400px; object-fit:contain; display:block; background:#000}
+.mscreen::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+}
+.mscreen .mstat{position:absolute; inset:0}
+.mh2{font-size:24px; letter-spacing:.1em; color:var(--ink); margin-bottom:10px; text-shadow:2px 2px 0 #000,0 0 14px rgba(242,242,234,.22)}
+.mmeta{font-size:12px; letter-spacing:.12em; line-height:2; color:var(--dim)}
+.mmeta .sub2{color:var(--dark)}
+.mdivider{height:3px; margin:16px 0; background:repeating-linear-gradient(90deg,#2a2d30 0 8px, transparent 8px 16px)}
+.mdesc{font-size:12px; line-height:2.1; color:#b9bcb4}
+.mend{margin-top:22px; display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.28em; color:#4a4d48}
+
+/* CRT 开机序列 */
+.boot-line{
+  position:absolute; left:0; right:0; top:50%; height:3px; z-index:30;
+  background:#f4f4ec;
+  box-shadow:0 0 18px 4px rgba(244,244,236,.9), 0 0 60px 14px rgba(190,220,255,.35);
+  transform:translateY(-50%) scaleY(1);
+  animation:boot-line .5s cubic-bezier(.2,.7,.3,1) .05s both; pointer-events:none;
+}
+@keyframes boot-line{
+  0%{transform:translateY(-50%) scaleY(1);opacity:0}
+  8%{transform:translateY(-50%) scaleY(1);opacity:1}
+  45%{transform:translateY(-50%) scaleY(90);opacity:1}
+  70%{transform:translateY(-50%) scaleY(260);opacity:.9}
+  100%{transform:translateY(-50%) scaleY(420);opacity:0}
+}
+.boot-static{
+  position:absolute; inset:0; z-index:29;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.09) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:boot-fade .95s steps(1) .1s both; pointer-events:none;
+}
+@keyframes boot-fade{
+  0%{opacity:1}12%{opacity:.4}18%{opacity:1}30%{opacity:.65}36%{opacity:1}
+  52%{opacity:.75}58%{opacity:.95}74%{opacity:.25}82%{opacity:.7}100%{opacity:0;visibility:hidden}
+}
+.boot-content{animation:crt-content-in .85s steps(1) .22s both}
+@keyframes crt-content-in{
+  0%{opacity:0;transform:scaleY(1.06);filter:brightness(2.2) contrast(1.6)}
+  18%{opacity:1;transform:scaleY(.985);filter:brightness(1.6) contrast(1.3)}
+  30%{opacity:.35}38%{opacity:1;filter:brightness(1.15)}
+  52%{opacity:.6;transform:scaleY(1.01)}60%{opacity:1;filter:none}
+  78%{opacity:.85}100%{opacity:1;transform:none;filter:none}
+}
+/* CRT 关机序列 */
+.off-veil{
+  position:absolute; inset:0; z-index:40; pointer-events:none; opacity:0; background:#050606;
+}
+.off-line{
+  position:absolute; left:0; right:0; top:50%; height:3px; z-index:41; opacity:0;
+  background:#f4f4ec;
+  box-shadow:0 0 18px 4px rgba(244,244,236,.9), 0 0 60px 14px rgba(190,220,255,.35);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.crt-off .boot-content{animation:crt-off-collapse .38s cubic-bezier(.5,0,.8,.4) both}
+@keyframes crt-off-collapse{
+  0%{transform:scaleY(1);filter:brightness(1)}
+  30%{transform:scaleY(1);filter:brightness(2.4) contrast(1.5)}
+  70%{transform:scaleY(.012);filter:brightness(3.2)}
+  100%{transform:scaleY(.004);filter:brightness(4);opacity:0}
+}
+.crt-off .off-veil{animation:off-veil .55s steps(2) both}
+@keyframes off-veil{
+  0%{opacity:0}20%{opacity:1}55%{opacity:.85}100%{opacity:1}
+}
+.crt-off .off-line{animation:off-line .55s ease-out both}
+@keyframes off-line{
+  0%,55%{opacity:0;transform:translateY(-50%) scaleY(1)}
+  62%{opacity:1;transform:translateY(-50%) scaleY(1)}
+  85%{opacity:1;transform:translateY(-50%) scaleY(.4)}
+  100%{opacity:0;transform:translateY(-50%) scaleY(.1)}
+}
+
+@media(max-width:600px){.mbody{padding:16px}}
+
+/* ── 入场界面 ─────────────────────────── */
+.entry{
+  position:fixed; inset:0; z-index:300; background:#050607;
+  display:flex; align-items:center; cursor:pointer; overflow:hidden;
+}
+.entry-stars{
+  position:absolute; inset:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='0.16'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)' opacity='0.12'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 30% 40%, rgba(255,255,255,.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 70%, rgba(255,255,255,.03) 0%, transparent 50%);
+  animation:entry-stars-move .8s steps(4) infinite;
+}
+@keyframes entry-stars-move{
+  0%{background-position:0 0,0 0,0 0,0 0}
+  25%{background-position:-30px 18px,14px -10px,0 0,0 0}
+  50%{background-position:22px -26px,-12px 16px,0 0,0 0}
+  75%{background-position:-14px -12px,10px 12px,0 0,0 0}
+  100%{background-position:0 0,0 0,0 0,0 0}
+}
+.entry-inner{position:relative; z-index:10; width:100%; max-width:900px; padding:0 8vw}
+.entry-top{
+  display:flex; align-items:center; gap:26px;
+  font-size:12px; letter-spacing:.3em; color:#8a8d88;
+}
+.entry-top .live{color:#a8b8a0}
+.entry-top .rdot{width:7px;height:7px;border-radius:50%;background:#b8543f;box-shadow:0 0 8px rgba(184,84,63,.8);animation:led 1.4s steps(1) infinite}
+.entry h2{
+  font-size:clamp(44px,8vw,88px); letter-spacing:.12em; font-weight:800; color:var(--ink);
+  margin-top:34px; text-shadow:3px 3px 0 #000, 0 0 20px rgba(242,242,234,.3);
+}
+.entry .en{
+  font-size:12px; letter-spacing:.5em; color:var(--dim); margin-top:16px;
+}
+.entry .sub{
+  font-size:12px; letter-spacing:.3em; color:#565a56; margin-top:10px;
+}
+.entry-visitors{
+  display:flex; gap:36px; margin-top:38px;
+  font-size:12px; letter-spacing:.2em; color:#7d8078;
+}
+.entry-visitors b{color:#efefe7; font-weight:400}
+.entry-visitors .on b{color:#a8b8a0}
+.entry-menu{margin-top:44px; display:flex; flex-direction:column; gap:16px}
+.entry-menu .mi{
+  font-size:15px; letter-spacing:.3em; color:#565a56; transition:color .1s steps(2);
+}
+.entry-menu .mi.sel{color:var(--ink)}
+.entry-menu .mi .vol{margin-left:30px; color:#7d8078}
+.entry-foot{
+  position:absolute; bottom:26px; right:34px; z-index:10;
+  font-size:12px; letter-spacing:.3em; color:#565a56;
+}
+/* 入场退出：雪花噪点过渡 */
+.entry.exiting{animation:entry-exit-snow .85s steps(6) both}
+@keyframes entry-exit-snow{
+  0%{opacity:1; filter:none}
+  25%{opacity:.85; filter:brightness(1.6) contrast(1.4)}
+  45%{opacity:.6}
+  60%{opacity:.9; filter:brightness(2)}
+  100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
+}
+.entry.exiting .entry-stars{animation-duration:.12s}
+body.locked{overflow:hidden}
+
+/* ── 无尽循环卡片流 ─────────────────────────── */
+.loops{
+  position:relative; z-index:10;
+  max-width:100vw; margin:0 auto; padding:40px 0 10px;
+  overflow:hidden;
+  mask-image:linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
+}
+.loop-row{overflow:hidden; padding:14px 0}
+.loop-track{
+  display:flex; width:max-content; will-change:transform;
+  animation:loop-scroll var(--dur,42s) linear infinite;
+  animation-direction:var(--dir,normal);
+}
+.loop-row:hover .loop-track{animation-play-state:paused}
+.loops.paused .loop-track{animation-play-state:paused}
+@keyframes loop-scroll{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+.loop-track .crt{
+  flex:0 0 auto; width:236px;
+  margin:0 18px;
+}
+@media(max-width:760px){.loop-track .crt{width:180px;margin:0 12px}}
+
+/* ── 退出监控按钮 ─────────────────────────── */
+.exit-btn{
+  position:fixed; top:16px; right:18px; z-index:250;
+  font-family:inherit; font-size:12px; letter-spacing:.24em;
+  color:#a8b8a0; background:#0c0e10;
+  border:1px solid #2a2d30; border-radius:4px;
+  padding:8px 14px; cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.exit-btn:hover{color:#efefe7; border-color:#4a5054; background:#14171a}
+.exit-btn .pwr{color:#b8543f; margin-right:8px}
+</style>
+</head>
+<body class="flicker-all">
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="scan-global"></div>
+
+<!-- 入场界面 -->
+<div class="entry" id="entry" role="button" aria-label="进入监控室档案">
+  <div class="entry-stars" aria-hidden></div>
+  <div class="entry-inner">
+    <div class="entry-top">
+      <span style="display:flex;align-items:center;gap:8px"><span class="rdot"></span>CAM-88</span>
+      <span class="live">SIGNAL LIVE</span>
+    </div>
+    <h2>监控室</h2>
+    <div class="en">SURVEILLANCE&nbsp;&nbsp;&nbsp;ARCHIVE</div>
+    <div class="sub">— 案例档案库 · CASE FILES —</div>
+    <div class="entry-visitors">
+      <span class="on">在线 <b id="vOnline">·</b> 人</span>
+      <span>历史浏览 <b id="vTotal">·</b> 人次</span>
+    </div>
+    <nav class="entry-menu" aria-label="入场菜单">
+      <div class="mi sel" data-i="0">&gt;&gt; LOGIN</div>
+      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;VOLUME<span class="vol">(55)</span></div>
+      <div class="mi" data-i="2">&nbsp;&nbsp;&nbsp;&nbsp;SETTING</div>
+    </nav>
+  </div>
+  <div class="entry-foot">↑↓ 选择 · ENTER / 点击 确认</div>
+</div>
+
+<main class="loops" id="loops"></main>
+
+<button type="button" class="exit-btn" id="exitBtn"><span class="pwr">⏻</span>退出监控</button>
+
+<footer>YOU ARE BEING WATCHED — AND YOU ARE WATCHING</footer>
+
+<!-- 雪花故障闪动（全屏转场） -->
+<div class="glitch-burst" id="burst" style="display:none" aria-hidden>
+  <div class="gnoise"></div>
+  <div class="gband"></div>
+  <div class="gtext">SIGNAL INTERRUPTED</div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="mbox" id="mbox">
+    <div class="boot-static" aria-hidden></div>
+    <div class="boot-line" aria-hidden></div>
+    <div class="off-veil" aria-hidden></div>
+    <div class="off-line" aria-hidden></div>
+    <div class="boot-content">
+      <div class="mtitlebar">
+        <span class="rec"></span>
+        <span class="code" id="mcode"></span>
+        <button type="button" class="mclose" id="mclose" aria-label="关闭">✕</button>
+      </div>
+      <div class="mbody">
+        <div class="mscreen" id="mscreen"></div>
+        <h2 class="mh2" id="mtitle"></h2>
+        <div class="mmeta" id="mmeta"></div>
+        <div class="mdivider"></div>
+        <p class="mdesc" id="mdesc"></p>
+        <div class="mend"><span class="rec" style="width:7px;height:7px;border-radius:50%;background:#b8543f"></span>END OF FILE — 点击查看其他屏幕</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+/* ── 入场界面：访问统计 + 菜单 + 雪花屏跳转 ─────────────────────────── */
+(function(){
+  const entry = document.getElementById('entry');
+  document.body.classList.add('locked');
+
+  /* 历史浏览人数：Abacus 免费计数（真实累计） */
+  const HIT = 'https://abacus.jasoncameron.dev/hit/monitorroom-b7-yige/visits';
+  const GET = 'https://abacus.jasoncameron.dev/get/monitorroom-b7-yige/visits';
+  const vTotal = document.getElementById('vTotal');
+  const vOnline = document.getElementById('vOnline');
+  let total = 0;
+  const setOnline = () => {
+    const t = Date.now();
+    const seed = total * 7 + Math.floor(t / 30000);
+    const x = Math.sin(seed * 12.9898) * 43758.5453;
+    vOnline.textContent = 1 + Math.floor((x - Math.floor(x)) * 4);
+  };
+  fetch(HIT).then(r => r.json()).then(d => {
+    total = d.value || 0; vTotal.textContent = total; setOnline();
+  }).catch(() => fetch(GET).then(r => r.json()).then(d => {
+    total = d.value || 0; vTotal.textContent = total; setOnline();
+  }).catch(() => { vTotal.textContent = '—'; vOnline.textContent = '1'; }));
+  setOnline();
+
+  /* 菜单选择 */
+  const mis = Array.from(entry.querySelectorAll('.mi'));
+  let sel = 0;
+  const render = () => mis.forEach((el, i) => {
+    el.classList.toggle('sel', i === sel);
+    el.innerHTML = (i === sel ? '&gt;&gt; ' : '&nbsp;&nbsp;&nbsp;&nbsp;') +
+      el.dataset.label + (el.dataset.label === 'VOLUME' ? '<span class="vol">(55)</span>' : '');
+  });
+  mis.forEach(el => el.dataset.label = el.textContent.trim().replace(/^>>\s*/, '').replace(/\s*\(55\)$/, ''));
+  render();
+
+  /* 确认进入：CRT 开机音效 + 雪花噪点过渡后切换到卡片界面 */
+  let entered = false;
+  const enter = () => {
+    if(entered) return;
+    entered = true;
+    playPowerOn();
+    entry.classList.add('exiting');
+    setTimeout(() => {
+      entry.style.display = 'none';
+      document.body.classList.remove('locked');
+    }, 860);
+  };
+  /* 反向流程：从卡片界面回到入场界面 */
+  window.__resetEntry = () => {
+    entered = false;
+    entry.classList.remove('exiting');
+    entry.style.display = 'flex';
+    document.body.classList.add('locked');
+  };
+  entry.addEventListener('click', enter);
+  document.addEventListener('keydown', e => {
+    if(entered) return;
+    if(e.key === 'ArrowUp'){ e.preventDefault(); sel = (sel + mis.length - 1) % mis.length; render(); }
+    if(e.key === 'ArrowDown'){ e.preventDefault(); sel = (sel + 1) % mis.length; render(); }
+    if(e.key === 'Enter'){ e.preventDefault(); enter(); }
+  });
+})();
+
+/* ── 渲染屏幕阵列 ─────────────────────────── */
+const loops = document.getElementById('loops');
+const pad = n => String(n).padStart(3,'0');
+const items = window.ITEMS.slice().sort((a,b)=>a.no-b.no);
+
+/* 确定性伪随机（每次加载布局一致） */
+let seed = 20260911;
+const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+
+function makeCrt(it){
+  const cat = window.CATEGORIES.find(c => c.key === it.category);
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'crt' + (it.broken ? ' broken' : '');
+  el.style.setProperty('--tilt', ((rnd() * 10 - 5)).toFixed(2) + 'deg');
+  el.style.setProperty('--tx', ((rnd() * 18 - 9)).toFixed(1) + 'px');
+  el.style.setProperty('--ty', ((rnd() * 14 - 7)).toFixed(1) + 'px');
+  el.style.setProperty('--sc', (0.93 + rnd() * 0.11).toFixed(3));
+  el.style.setProperty('--fdur', (5 + rnd() * 4).toFixed(2) + 's');
+  el.style.setProperty('--fdel', (-rnd() * 6).toFixed(2) + 's');
+  el.style.setProperty('--fdrop', (-(6 + rnd() * 8)).toFixed(1) + 'px');
+  el.style.setProperty('--lit', (0.86 + rnd() * 0.16).toFixed(2));
+  el.setAttribute('aria-label', `查看《${it.title}》详情`);
+  el.innerHTML = `
+    <div class="bezel">
+      <div class="screen">
+        ${it.broken ? '<div class="static-fill"></div>' : (it.noImage ? '<div class="static-fill"></div>' : `<img loading="lazy" src="img/img-${String(it.no).padStart(2,'0')}.jpg" alt="${it.title}">`)}
+        <div class="rollband"></div>
+      </div>
+    </div>`;
+  el.addEventListener('click', () => openCase(it, cat));
+  return el;
+}
+
+/* 分行无缝循环：5 行 × 10 张，内容双份复制，左右往返滚动 */
+const ROWS = 5, PER = 10;
+for(let r = 0; r < ROWS; r++){
+  const row = document.createElement('div');
+  row.className = 'loop-row';
+  const track = document.createElement('div');
+  track.className = 'loop-track';
+  track.style.setProperty('--dur', (38 + r * 8) + 's');
+  track.style.setProperty('--dir', r % 2 ? 'reverse' : 'normal');
+  for(let copy = 0; copy < 2; copy++){
+    for(let c = 0; c < PER; c++){
+      track.appendChild(makeCrt(items[(r * PER + c) % items.length]));
+    }
+  }
+  row.appendChild(track);
+  loops.appendChild(row);
+}
+
+/* ── CRT 音效（Web Audio 实时合成） ─────────────────────────── */
+let _ctx = null;
+function ac(){
+  if(!_ctx){ _ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+  if(_ctx.state === 'suspended') _ctx.resume();
+  return _ctx;
+}
+function noiseBuf(c, dur){
+  const b = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
+  const d = b.getChannelData(0);
+  for(let i = 0; i < d.length; i++) d[i] = Math.random()*2-1;
+  return b;
+}
+function clickSnd(c, t, freq, vol, dur){
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, dur);
+  const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value = freq;
+  const g = c.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f).connect(g).connect(c.destination);
+  s.start(t); s.stop(t + dur + 0.02);
+}
+function playPowerOn(){
+  const c = ac(), t = c.currentTime;
+  clickSnd(c, t, 1600, 0.5, 0.045);
+  const th = c.createOscillator(); th.type='sine';
+  th.frequency.setValueAtTime(170, t+0.02);
+  th.frequency.exponentialRampToValueAtTime(42, t+0.22);
+  const thG = c.createGain();
+  thG.gain.setValueAtTime(0.0001, t+0.02);
+  thG.gain.exponentialRampToValueAtTime(0.5, t+0.045);
+  thG.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+  th.connect(thG).connect(c.destination); th.start(t+0.02); th.stop(t+0.32);
+  const dur = 1.15;
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, dur);
+  const hp = c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 850;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.24, t+0.025);
+  for(let i = 0; i < 16; i++){
+    g.gain.setTargetAtTime(0.05 + Math.random()*0.18, t + 0.06 + Math.random()*(dur-0.15), 0.006);
+  }
+  g.gain.setTargetAtTime(0.0001, t+dur, 0.05);
+  s.connect(hp).connect(g).connect(c.destination); s.start(t); s.stop(t+dur+0.1);
+  const w = c.createOscillator(); w.type='sine';
+  w.frequency.setValueAtTime(2400, t+0.15);
+  w.frequency.exponentialRampToValueAtTime(12500, t+0.85);
+  const wG = c.createGain();
+  wG.gain.setValueAtTime(0.0001, t+0.15);
+  wG.gain.exponentialRampToValueAtTime(0.022, t+0.3);
+  wG.gain.exponentialRampToValueAtTime(0.0001, t+1.0);
+  w.connect(wG).connect(c.destination); w.start(t+0.15); w.stop(t+1.05);
+}
+function playPowerOff(){
+  const c = ac(), t = c.currentTime;
+  clickSnd(c, t, 1200, 0.4, 0.04);
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, 0.3);
+  const hp = c.createBiquadFilter(); hp.type='highpass';
+  hp.frequency.setValueAtTime(1200, t);
+  hp.frequency.exponentialRampToValueAtTime(300, t+0.28);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+  s.connect(hp).connect(g).connect(c.destination); s.start(t); s.stop(t+0.35);
+}
+
+/* ── 弹窗 ─────────────────────────── */
+const modal = document.getElementById('modal');
+const mbox = document.getElementById('mbox');
+const burst = document.getElementById('burst');
+let opening = false;
+let closing = false;
+
+/* 弹窗文字乱码→解码 */
+const POOL = '的一是了在监控信号像素雪花屏幕档案故障中断未知错误乱码解码数据权力眼睛图像记录窥视01<>/|+=*#@%&';
+function scrambleText(el, real){
+  let step = 0;
+  const tick = () => {
+    el.textContent = Array.from(real).map(ch =>
+      (ch === ' ' || ch === '\n' || ch === '—' || ch === '·') ? ch : POOL[Math.floor(Math.random() * POOL.length)]
+    ).join('');
+    if(++step < 3) setTimeout(tick, 160);
+  };
+  tick();
+}
+
+function openCase(it, cat){
+  if(opening || closing) return;
+  opening = true;
+  playPowerOn();
+  burst.style.display = 'block';
+  setTimeout(() => {
+    burst.style.display = 'none';
+    document.getElementById('mscreen').innerHTML = (it.broken || it.noImage)
+      ? '<div class="mstat static-fill"></div><div class="no-signal">NO SIGNAL</div>'
+      : `<img src="img/img-${String(it.no).padStart(2,'0')}.jpg" alt="${it.title}">`;
+
+    /* 重挂开机动画：先克隆重置动画状态（必须在取元素引用之前，否则引用会指向被替换掉的旧节点） */
+    mbox.querySelectorAll('.boot-static, .boot-line, .boot-content').forEach(n => {
+      const c = n.cloneNode(true);
+      n.parentNode.replaceChild(c, n);
+    });
+
+    /* 文字先以乱码显示，0.5 秒后解码为正常文字 */
+    const codeEl = document.getElementById('mcode');
+    const titleEl = document.getElementById('mtitle');
+    const metaEl = document.getElementById('mmeta');
+    const descEl = document.getElementById('mdesc');
+    const realCode = `${cat ? cat.code : ''} / NO.${pad(it.no)} · ${cat ? cat.en : ''}`;
+    const realTitle = `《${it.title}》`;
+    const realMeta = `${it.author ? `<div>AUTHOR — ${it.author}</div>` : '<div>UNKNOWN AUTHOR</div>'}` +
+      `<div class="sub2">${it.year || 'N/A'} · ${cat ? cat.label : ''} · ${cat ? cat.en : ''}${it.added ? ' · <span style="color:#b8543f">素材补充条目</span>' : ''}</div>`;
+    const realDesc = it.desc;
+    scrambleText(codeEl, realCode);
+    scrambleText(titleEl, realTitle);
+    scrambleText(metaEl, realMeta.replace(/<[^>]+>/g, ''));
+    scrambleText(descEl, realDesc);
+    setTimeout(() => {
+      codeEl.textContent = realCode;
+      titleEl.textContent = realTitle;
+      metaEl.innerHTML = realMeta;
+      descEl.textContent = realDesc;
+    }, 500);
+    loops.classList.add('paused');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { opening = false; }, 400);
+  }, 620);
+}
+function closeModal(){
+  if(!modal.classList.contains('show') || closing || opening) return;
+  closing = true;
+  playPowerOff(); /* 关机咔哒 + 静电消散 */
+  mbox.classList.add('crt-off'); /* CRT 关机：画面纵向坍缩成亮线 + 静电噪点 */
+  setTimeout(() => {
+    modal.classList.remove('show');
+    mbox.classList.remove('crt-off');
+    document.body.style.overflow = '';
+    closing = false;
+    loops.classList.remove('paused'); /* 恢复循环滚动 */
+  }, 560);
+}
+/* 事件委托：✕ 按钮在每次开机时会被克隆重建，委托到 modal 上才不会丢 */
+modal.addEventListener('click', e => {
+  if(e.target === modal || e.target.closest('.mclose')) closeModal();
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+/* ── 反向流程：退出监控 ─────────────────────────── */
+document.getElementById('exitBtn').addEventListener('click', () => {
+  playPowerOff();
+  burst.style.display = 'block';
+  setTimeout(() => {
+    burst.style.display = 'none';
+    window.__resetEntry();
+  }, 620);
+});
+
+/* 深链：#case-N 直接打开对应档案 */
+window.addEventListener('DOMContentLoaded', () => {
+  const m = location.hash.match(/^#case-(\d+)$/);
+  if(m){
+    const it = items.find(x => x.no === Number(m[1]));
+    if(it) setTimeout(() => openCase(it, window.CATEGORIES.find(c => c.key === it.category)), 600);
+  }
+});
+</script>
+</body>
+</html>
