@@ -15,6 +15,7 @@
 | V5 · 第五版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第五版/ | 3D 螺旋画廊「螺旋档案」（可直接访问） |
 | V6 · 第六版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第六版/pixel/ | 3D 环形展厅 + CRT 开机雪花屏弹窗 + 开机/关机音效（建议戴耳机） |
 | V3异 · 第三版-异格 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-异格/ | 像素点阵字体版：卡片无文字，弹窗文字乱码→0.5s 解码，开关机动画+音效，关闭后洗牌（建议戴耳机） |
+| V3三异 · 第三版-三异 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-三异/ | CCTV 入场界面 + 无限下滑 CRT 卡片流 + 纯红像素线条眼形光标（点击眨眼、520ms 颗粒噪点拖尾，触屏自动禁用） |
 
 ## 🌿 分支结构
 
