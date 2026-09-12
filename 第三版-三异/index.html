@@ -387,16 +387,12 @@ footer{
 .entry.exiting .entry-stars{animation-duration:.12s}
 body.locked{overflow:hidden}
 
-/* ── 像素红眼自定义光标 ─────────────────────────── */
+/* ── 像素红眼自定义光标（纯红线条 + 颗粒拖尾） ─────────────────────────── */
 html,body,a,button,[role="button"]{cursor:none}
-#eyeCursor{
-  position:fixed; left:0; top:0; z-index:9999;
-  width:78px; height:54px;
-  image-rendering:pixelated; image-rendering:crisp-edges;
+#eyeLayer{
+  position:fixed; inset:0; z-index:9999;
   pointer-events:none;
-  transform:translate(-100px,-100px);
-  filter:drop-shadow(0 0 6px rgba(255,45,45,.55)) drop-shadow(0 2px 2px rgba(0,0,0,.6));
-  mix-blend-mode:normal;
+  image-rendering:pixelated; image-rendering:crisp-edges;
 }
 </style>
 </head>
@@ -436,7 +432,7 @@ html,body,a,button,[role="button"]{cursor:none}
 
 <main class="stage" id="stage"></main>
 
-<canvas id="eyeCursor" width="26" height="18" aria-hidden></canvas>
+<canvas id="eyeLayer" aria-hidden></canvas>
 
 <footer>YOU ARE BEING WATCHED — AND YOU ARE WATCHING</footer>
 
@@ -749,60 +745,97 @@ modal.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 
-/* ── 像素红眼自定义光标（点击眨眼） ─────────────────────────── */
+/* ── 像素红眼自定义光标（纯红线条眼形 + 颗粒噪点拖尾，点击眨眼） ─────────────────────────── */
 (function(){
-  const cv = document.getElementById('eyeCursor');
-  if(!cv || !cv.getContext) return;
-  if(matchMedia('(pointer:coarse)').matches){ cv.style.display = 'none'; document.documentElement.style.cursor=''; return; }
-  const g = cv.getContext('2d');
-  const W = 26, H = 18, CX = 13, CY = 9, RX = 12, RY = 7;
-  const RED = '#d92b2b', RED_D = '#8f1414', DARK = '#151515', WHITE = '#ededed';
+  const layer = document.getElementById('eyeLayer');
+  if(!layer || !layer.getContext) return;
+  if(matchMedia('(pointer:coarse)').matches){ layer.style.display = 'none'; document.documentElement.style.cursor = ''; return; }
+  const ctx = layer.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
 
-  function drawEye(open){ /* open: 0(闭眼) ~ 1(睁眼) — 纯红瞳，无眼白 */
+  /* 26×18 低分辨率精灵：纯红色像素线条勾勒的眼形 */
+  const W = 26, H = 18, CX = 13, CY = 9, RX = 12, RY = 7;
+  const RED = '#ff3030', RED_D = '#c11616', DK = '#380000';
+  const sprite = document.createElement('canvas');
+  sprite.width = W; sprite.height = H;
+  const g = sprite.getContext('2d');
+
+  function drawEye(open){ /* open: 0(闭眼) ~ 1(睁眼)，纯线条无填充 */
     g.clearRect(0, 0, W, H);
+    const ry = Math.max(0.35, RY * open);
+    for(let y = 0; y < H; y++){ /* 眼眶：杏仁形红色描边 */
+      for(let x = 0; x < W; x++){
+        const e = ((x - CX) / RX) ** 2 + ((y - CY) / ry) ** 2;
+        if(e <= 1.06 && e >= 0.74){ g.fillStyle = RED; g.fillRect(x, y, 1, 1); }
+      }
+    }
     if(open > 0.3){
-      const ir = (5.4 * open + 0.6) * 1.18; /* 去掉眼白后红瞳略放大 */
+      const ir = 5.4 * open + 0.4; /* 虹膜红圈 */
       for(let y = 0; y < H; y++){
         for(let x = 0; x < W; x++){
-          const dx = (x - CX) / (ir * 1.45), dy = (y - CY) / ir; /* 微椭圆更像眼睛 */
-          const d = Math.hypot(dx, dy);
-          if(d <= 1){
-            const ring = d > 0.82;
-            g.fillStyle = ring ? RED_D : (d <= 0.4 ? DARK : RED);
-            g.fillRect(x, y, 1, 1);
-          }
+          const d = Math.hypot(x - CX, y - CY);
+          if(d <= ir && d >= ir - 1.25){ g.fillStyle = RED_D; g.fillRect(x, y, 1, 1); }
+          if(d < 1.5){ g.fillStyle = DK; g.fillRect(x, y, 1, 1); } /* 针尖瞳孔 */
         }
       }
-      g.fillStyle = '#ff6b6b'; /* 高光点 */
-      g.fillRect(CX - 2, CY - 3, 1, 1);
-    }else{ /* 闭眼：中央红缝 */
-      for(let x = CX - 4; x <= CX + 4; x++){ g.fillStyle = RED_D; g.fillRect(x, CY, 1, 1); }
+    }else{ /* 闭眼：一条红缝 */
+      for(let x = CX - 4; x <= CX + 4; x++){ g.fillStyle = RED; g.fillRect(x, CY, 1, 1); }
     }
   }
-
-  let open = 1, blinking = false, visible = false;
   drawEye(1);
 
-  document.addEventListener('mousemove', e => { /* 即时跟随，无延迟 */
-    cv.style.transform = `translate(${Math.round(e.clientX - 39)}px,${Math.round(e.clientY - 27)}px)`;
-    if(!visible){ visible = true; cv.style.opacity = '1'; }
+  const SCALE = 3, SW = W * SCALE, SH = H * SCALE;
+  function fit(){ layer.width = innerWidth; layer.height = innerHeight; ctx.imageSmoothingEnabled = false; }
+  fit();
+  addEventListener('resize', fit);
+
+  let mx = -200, my = -200, visible = false;
+  const trail = []; /* 拖尾轨迹点：{x,y,t} */
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    const last = trail[trail.length - 1];
+    if(!last || Math.hypot(mx - last.x, my - last.y) > 3) trail.push({x: mx, y: my, t: performance.now()});
+    visible = true;
   });
-  document.documentElement.addEventListener('mouseleave', () => { visible = false; cv.style.opacity = '0'; });
+  document.documentElement.addEventListener('mouseleave', () => { visible = false; });
 
   function blink(){
-    if(blinking) return;
-    blinking = true;
     let t0 = performance.now();
     const step = now => { /* 140ms 闭眼 → 160ms 睁眼 */
       const t = now - t0;
-      open = t < 140 ? 1 - t / 140 : Math.min(1, (t - 140) / 160);
-      drawEye(open);
-      if(t < 300){ requestAnimationFrame(step); } else { open = 1; blinking = false; }
+      drawEye(t < 140 ? 1 - t / 140 : Math.min(1, (t - 140) / 160));
+      if(t < 300) requestAnimationFrame(step); else drawEye(1);
     };
     requestAnimationFrame(step);
   }
   document.addEventListener('pointerdown', blink); /* 点击眨眼 */
   (function auto(){ setTimeout(() => { blink(); auto(); }, 2600 + Math.random() * 3200); })(); /* 随机自主眨眼 */
+
+  const LIFE = 520; /* 拖尾存活 520ms */
+  (function loop(){
+    ctx.clearRect(0, 0, layer.width, layer.height);
+    const now = performance.now();
+    while(trail.length && now - trail[0].t > LIFE) trail.shift();
+    for(const p of trail){
+      const a = 1 - (now - p.t) / LIFE;
+      if(Math.random() < 0.88){ /* 颗粒闪烁：随机丢帧 */
+        ctx.globalAlpha = a * 0.45;
+        const jx = p.x + (Math.random() * 5 - 2.5), jy = p.y + (Math.random() * 5 - 2.5); /* 颗粒抖动 */
+        ctx.drawImage(sprite, Math.round(jx - SW / 2), Math.round(jy - SH / 2), SW, SH);
+      }
+      for(let k = 0; k < 2; k++){ /* 散落噪点 */
+        ctx.globalAlpha = a * 0.65;
+        ctx.fillStyle = RED;
+        ctx.fillRect(Math.round(p.x + (Math.random() * 44 - 22)), Math.round(p.y + (Math.random() * 30 - 15)), 2, 2);
+      }
+    }
+    if(visible){ /* 头部光标（即时跟随，无延迟） */
+      ctx.globalAlpha = 1;
+      ctx.drawImage(sprite, Math.round(mx - SW / 2), Math.round(my - SH / 2), SW, SH);
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(loop);
+  })();
 })();
 
 /* 深链：#case-N 直接打开对应档案 */
