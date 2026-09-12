@@ -45,36 +45,49 @@ body{
   0%,93.9%,95.3%,100%{opacity:1} 94%{opacity:.86} 94.6%{opacity:.97}
 }
 
-/* ── 标题 ─────────────────────────── */
-header{
-  text-align:center; padding:46px 16px 8px; position:relative; z-index:11; pointer-events:none;
+/* ── 标题：巨型像素水印，置于塔身之后 ─────────────────── */
+.brand{
+  position:relative; z-index:11; text-align:center; padding:26px 16px 0; pointer-events:none;
 }
-h1{
-  font-size:clamp(36px,6vw,48px); letter-spacing:.14em; font-weight:800;
-  color:var(--ink);
-  text-shadow:3px 3px 0 #000, 0 0 22px rgba(242,242,234,.28);
+.brand .en{
+  font-size:12px; letter-spacing:.46em; color:var(--dim);
 }
-h1 .en{
-  display:block; font-size:12px; color:var(--dim); letter-spacing:.46em; margin-top:10px; font-weight:400;
-}
-.hint{
-  margin-top:14px; font-size:12px; letter-spacing:.32em; color:var(--dark);
+.brand .hint{
+  margin-top:10px; font-size:12px; letter-spacing:.28em; color:var(--dark);
   animation:hint-blink 2.6s steps(1) infinite;
 }
 @keyframes hint-blink{0%,100%{opacity:1}50%{opacity:.35}}
+.bgtitle{
+  position:fixed; left:0; right:0; top:44%; z-index:5;
+  transform:translateY(-50%);
+  text-align:center; pointer-events:none; user-select:none;
+  font-size:clamp(96px,19vw,230px); font-weight:800; letter-spacing:.1em;
+  color:rgba(239,239,231,.13);
+  text-shadow:0 0 40px rgba(242,242,234,.10);
+  line-height:1;
+}
+.bgtitle span{
+  display:block; font-size:clamp(14px,2.4vw,28px); letter-spacing:.6em;
+  color:rgba(168,184,160,.18); margin-top:14px;
+}
 
 /* ── 屏幕阵列 ─────────────────────────── */
+.hud{
+  position:fixed; left:16px; bottom:14px; z-index:12;
+  font-size:12px; letter-spacing:.18em; color:var(--dim);
+  text-shadow:1px 1px 0 #000; pointer-events:none;
+}
 .stage{
   position:fixed; inset:0; z-index:10;
-  perspective:1100px; perspective-origin:50% 40%;
+  perspective:1000px; perspective-origin:50% 68%;
   overflow:hidden; cursor:grab; touch-action:none;
 }
 .stage:active{cursor:grabbing}
 .world{
-  position:absolute; left:50%; top:57%;
+  position:absolute; left:50%; top:61%;
   width:0; height:0;
   transform-style:preserve-3d;
-  transform:translateZ(-110px) rotateX(20deg) scale(.92);
+  transform:translateZ(-30px) rotateX(33deg) scale(.97);
 }
 .core{
   position:absolute; left:-3px; top:-680px; width:6px; height:1360px;
@@ -82,7 +95,7 @@ h1 .en{
   transform:translateZ(0);
 }
 .ring{
-  position:absolute; border:2px solid rgba(238,238,228,.25); border-radius:50%;
+  position:absolute; border:2px solid rgba(238,238,228,.18); border-radius:50%;
   transform:rotateX(90deg) translateZ(0);
 }
 
@@ -200,7 +213,7 @@ footer{
 }
 @keyframes burst-band{0%{top:8%}33%{top:52%}66%{top:74%}100%{top:20%}}
 .glitch-burst .gtext{
-  position:absolute; left:50%; top:57%; transform:translate(-50%,-50%);
+  position:absolute; left:50%; top:61%; transform:translate(-50%,-50%);
   color:rgba(242,242,234,.85); font-size:clamp(12px,2vw,24px); letter-spacing:.5em;
   text-shadow:2px 0 rgba(184,84,63,.8), -2px 0 rgba(120,160,200,.8);
   animation:burst-text .1s steps(2) infinite;
@@ -328,13 +341,15 @@ footer{
 <div class="vignette"></div>
 <div class="scan-global"></div>
 
-<header>
-  <h1>监控室<span class="en">MONITOR ROOM · B7</span></h1>
-  <div class="hint">◄ CLICK A SCREEN — 点击屏幕查看档案 ►</div>
+<div class="bgtitle" aria-hidden="true">监控室<span>MONITOR ROOM · B7</span></div>
+<header class="brand">
+  <div class="en">MONITOR ROOM · B7</div>
+  <div class="hint">◄ CLICK A SCREEN — 点击屏幕查看档案 · SCROLL TO CONTROL — 滚轮调速 ►</div>
 </header>
 
 <main class="stage" id="stage"><div class="world" id="world"></div></main>
 
+<div id="hud" class="hud">▲ RISING 26 PX/S</div>
 <footer>YOU ARE BEING WATCHED — AND YOU ARE WATCHING</footer>
 
 <!-- 雪花故障闪动（全屏转场） -->
@@ -446,14 +461,30 @@ const cards = items.map(it => {
   stage.addEventListener('pointercancel', up);
 })();
 
+/* 滚轮调速：下滚加速上升，上滚减速直至倒转 */
+let bias = 0;
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  bias += e.deltaY * 0.06;
+  bias = Math.max(-90, Math.min(170, bias));
+}, { passive:false });
+
+const hud = document.getElementById('hud');
+let hudTick = 0;
+function updateHud(effSpeed){
+  const dir = effSpeed >= 0 ? '▲ RISING' : '▼ REVERSING';
+  hud.textContent = `${dir} ${Math.abs(Math.round(effSpeed))} PX/S`;
+}
 let last = performance.now();
 function frame(now){
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  const effSpeed = SPEED + bias;
   tA += OMEGA * dt;
-  tY += SPEED * dt;
+  tY += effSpeed * dt;
   offA += velA; offY += velY;
   velA *= 0.93; velY *= 0.93;
+  if(++hudTick % 6 === 0) updateHud(effSpeed);
   const A = tA + offA, Y = tY + offY;
   for(let i = 0; i < N; i++){
     const ang = i * STEP + A;

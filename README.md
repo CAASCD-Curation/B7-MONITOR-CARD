@@ -17,7 +17,7 @@
 | V3异 · 第三版-异格 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-异格/ | 像素点阵字体版：卡片无文字，弹窗文字乱码→0.5s 解码，开关机动画+音效，关闭后洗牌（建议戴耳机） |
 | V3三异 · 第三版-三异 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-三异/ | CCTV 入场界面 + 无限下滑 CRT 卡片流 + 纯红像素线条眼形光标（点击眨眼、520ms 颗粒噪点拖尾，触屏自动禁用） |
 | V3二异 · 第三版-二异 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-二异/ | 无标题无尽循环 CRT 卡片流（5 行双份往返滚动）+ ⏻ 退出监控反向流程（CRT 关机音效 + 雪花屏回入场界面，可反复开关） |
-| V7 · 第七版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第七版/ | 螺旋上升 CRT 塔：50 块屏幕绕中轴无限螺旋上升+自转，可拖拽扭转/推拉，弹窗乱码解码 + 开关机音效（建议戴耳机） |
+| V7 · 第七版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第七版/ | 螺旋上升 CRT 塔（仰视视角，塔底向上看）：50 块屏幕无限螺旋上升+自转，**滚轮调速**（下滚加速/上滚减速倒转，左下角有速度指示），巨型像素水印标题置于塔后，弹窗乱码解码 + 开关机音效（建议戴耳机） |
 
 ## 🌿 分支结构
 
