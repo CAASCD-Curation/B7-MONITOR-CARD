@@ -320,12 +320,102 @@ footer{
 }
 
 @media(max-width:600px){.mbody{padding:16px}}
+
+/* ── 入场界面 ─────────────────────────── */
+.entry{
+  position:fixed; inset:0; z-index:300; background:#050607;
+  display:flex; align-items:center; cursor:pointer; overflow:hidden;
+}
+.entry-stars{
+  position:absolute; inset:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)' opacity='0.16'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)' opacity='0.12'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 30% 40%, rgba(255,255,255,.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 70%, rgba(255,255,255,.03) 0%, transparent 50%);
+  animation:entry-stars-move .8s steps(4) infinite;
+}
+@keyframes entry-stars-move{
+  0%{background-position:0 0,0 0,0 0,0 0}
+  25%{background-position:-30px 18px,14px -10px,0 0,0 0}
+  50%{background-position:22px -26px,-12px 16px,0 0,0 0}
+  75%{background-position:-14px -12px,10px 12px,0 0,0 0}
+  100%{background-position:0 0,0 0,0 0,0 0}
+}
+.entry-inner{position:relative; z-index:10; width:100%; max-width:900px; padding:0 8vw}
+.entry-top{
+  display:flex; align-items:center; gap:26px;
+  font-size:12px; letter-spacing:.3em; color:#8a8d88;
+}
+.entry-top .live{color:#a8b8a0}
+.entry-top .rdot{width:7px;height:7px;border-radius:50%;background:#b8543f;box-shadow:0 0 8px rgba(184,84,63,.8);animation:led 1.4s steps(1) infinite}
+.entry h2{
+  font-size:clamp(44px,8vw,88px); letter-spacing:.12em; font-weight:800; color:var(--ink);
+  margin-top:34px; text-shadow:3px 3px 0 #000, 0 0 20px rgba(242,242,234,.3);
+}
+.entry .en{
+  font-size:12px; letter-spacing:.5em; color:var(--dim); margin-top:16px;
+}
+.entry .sub{
+  font-size:12px; letter-spacing:.3em; color:#565a56; margin-top:10px;
+}
+.entry-visitors{
+  display:flex; gap:36px; margin-top:38px;
+  font-size:12px; letter-spacing:.2em; color:#7d8078;
+}
+.entry-visitors b{color:#efefe7; font-weight:400}
+.entry-visitors .on b{color:#a8b8a0}
+.entry-menu{margin-top:44px; display:flex; flex-direction:column; gap:16px}
+.entry-menu .mi{
+  font-size:15px; letter-spacing:.3em; color:#565a56; transition:color .1s steps(2);
+}
+.entry-menu .mi.sel{color:var(--ink)}
+.entry-menu .mi .vol{margin-left:30px; color:#7d8078}
+.entry-foot{
+  position:absolute; bottom:26px; right:34px; z-index:10;
+  font-size:12px; letter-spacing:.3em; color:#565a56;
+}
+/* 入场退出：雪花噪点过渡 */
+.entry.exiting{animation:entry-exit-snow .85s steps(6) both}
+@keyframes entry-exit-snow{
+  0%{opacity:1; filter:none}
+  25%{opacity:.85; filter:brightness(1.6) contrast(1.4)}
+  45%{opacity:.6}
+  60%{opacity:.9; filter:brightness(2)}
+  100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
+}
+.entry.exiting .entry-stars{animation-duration:.12s}
+body.locked{overflow:hidden}
 </style>
 </head>
 <body class="flicker-all">
 <div class="grain"></div>
 <div class="vignette"></div>
 <div class="scan-global"></div>
+
+<!-- 入场界面 -->
+<div class="entry" id="entry" role="button" aria-label="进入监控室档案">
+  <div class="entry-stars" aria-hidden></div>
+  <div class="entry-inner">
+    <div class="entry-top">
+      <span style="display:flex;align-items:center;gap:8px"><span class="rdot"></span>CAM-88</span>
+      <span class="live">SIGNAL LIVE</span>
+    </div>
+    <h2>监控室</h2>
+    <div class="en">SURVEILLANCE&nbsp;&nbsp;&nbsp;ARCHIVE</div>
+    <div class="sub">— 案例档案库 · CASE FILES —</div>
+    <div class="entry-visitors">
+      <span class="on">在线 <b id="vOnline">·</b> 人</span>
+      <span>历史浏览 <b id="vTotal">·</b> 人次</span>
+    </div>
+    <nav class="entry-menu" aria-label="入场菜单">
+      <div class="mi sel" data-i="0">&gt;&gt; LOGIN</div>
+      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;VOLUME<span class="vol">(55)</span></div>
+      <div class="mi" data-i="2">&nbsp;&nbsp;&nbsp;&nbsp;SETTING</div>
+    </nav>
+  </div>
+  <div class="entry-foot">↑↓ 选择 · ENTER / 点击 确认</div>
+</div>
 
 <header>
   <h1>监控室<span class="en">MONITOR ROOM · B7</span></h1>
@@ -370,6 +460,62 @@ footer{
 
 <script src="data.js"></script>
 <script>
+/* ── 入场界面：访问统计 + 菜单 + 雪花屏跳转 ─────────────────────────── */
+(function(){
+  const entry = document.getElementById('entry');
+  document.body.classList.add('locked');
+
+  /* 历史浏览人数：Abacus 免费计数（真实累计） */
+  const HIT = 'https://abacus.jasoncameron.dev/hit/monitorroom-b7-yige/visits';
+  const GET = 'https://abacus.jasoncameron.dev/get/monitorroom-b7-yige/visits';
+  const vTotal = document.getElementById('vTotal');
+  const vOnline = document.getElementById('vOnline');
+  let total = 0;
+  const setOnline = () => {
+    const t = Date.now();
+    const seed = total * 7 + Math.floor(t / 30000);
+    const x = Math.sin(seed * 12.9898) * 43758.5453;
+    vOnline.textContent = 1 + Math.floor((x - Math.floor(x)) * 4);
+  };
+  fetch(HIT).then(r => r.json()).then(d => {
+    total = d.value || 0; vTotal.textContent = total; setOnline();
+  }).catch(() => fetch(GET).then(r => r.json()).then(d => {
+    total = d.value || 0; vTotal.textContent = total; setOnline();
+  }).catch(() => { vTotal.textContent = '—'; vOnline.textContent = '1'; }));
+  setOnline();
+
+  /* 菜单选择 */
+  const mis = Array.from(entry.querySelectorAll('.mi'));
+  let sel = 0;
+  const render = () => mis.forEach((el, i) => {
+    el.classList.toggle('sel', i === sel);
+    el.innerHTML = (i === sel ? '&gt;&gt; ' : '&nbsp;&nbsp;&nbsp;&nbsp;') +
+      el.dataset.label + (el.dataset.label === 'VOLUME' ? '<span class="vol">(55)</span>' : '');
+  });
+  mis.forEach(el => el.dataset.label = el.textContent.trim().replace(/^>>\s*/, '').replace(/\s*\(55\)$/, ''));
+  render();
+
+  /* 确认进入：CRT 开机音效 + 雪花噪点过渡后切换到卡片界面 */
+  let entered = false;
+  const enter = () => {
+    if(entered) return;
+    entered = true;
+    playPowerOn();
+    entry.classList.add('exiting');
+    setTimeout(() => {
+      entry.style.display = 'none';
+      document.body.classList.remove('locked');
+    }, 860);
+  };
+  entry.addEventListener('click', enter);
+  document.addEventListener('keydown', e => {
+    if(entered) return;
+    if(e.key === 'ArrowUp'){ e.preventDefault(); sel = (sel + mis.length - 1) % mis.length; render(); }
+    if(e.key === 'ArrowDown'){ e.preventDefault(); sel = (sel + 1) % mis.length; render(); }
+    if(e.key === 'Enter'){ e.preventDefault(); enter(); }
+  });
+})();
+
 /* ── 渲染屏幕阵列 ─────────────────────────── */
 const stage = document.getElementById('stage');
 const pad = n => String(n).padStart(3,'0');
