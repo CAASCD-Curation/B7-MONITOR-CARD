@@ -4,7 +4,7 @@
 
 ## 🌐 在线访问（GitHub Pages）
 
-**版本索引首页：https://caascd-curation.github.io/B7-MONITOR-CARD/**
+
 
 | 版本 | 入口链接 | 说明 |
 | --- | --- | --- |
