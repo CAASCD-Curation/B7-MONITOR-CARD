@@ -159,16 +159,23 @@
     });
   }
 
-  /* ── 点击节点 → 左侧档案弹窗切换为对应素材详情 ─────────────────────────── */
+  /* ── 点击节点 → 跳转到对应素材的详情弹窗 ─────────────────────────── */
   function onNodeClick(it){
     const cat = catOf(it);
-    if(modal.classList.contains('show')){
-      /* 左侧弹窗已打开：原地切换内容（CRT 重开机动画 + 乱码解码） */
+    if(modal.classList.contains('show') && !mbox.classList.contains('crt-off')){
+      /* 详情弹窗已打开：原地切换内容（CRT 重开机动画 + 乱码解码） */
       switchCaseContent(it, cat);
-    }else{
-      /* 左侧弹窗未打开：走原有开机流程打开 */
-      openCase(it, cat);
+      return;
     }
+    /* 详情弹窗已关闭 / 正在关机：等关机动画结束后再重新打开，
+       避免点击被 openCase 的 opening/closing 保护期吞掉 */
+    const retry = setInterval(() => {
+      if(!closing && !opening){
+        clearInterval(retry);
+        openCase(it, cat);
+      }
+    }, 100);
+    setTimeout(() => clearInterval(retry), 2000); /* 保险 */
   }
 
   /* 在已打开的档案弹窗内切换素材（复刻 openCase 的填装逻辑，无全屏雪花） */
