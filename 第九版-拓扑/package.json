@@ -1,0 +1,9 @@
+{
+  "name": "b7-monitor-card-v9-topology",
+  "version": "9.0.0",
+  "private": true,
+  "description": "监控室 MONITOR ROOM · B7 · V9 拓扑版 — 档案详情弹窗 + 右侧关联拓扑弹窗",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}
