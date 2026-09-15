@@ -17,7 +17,7 @@
 | V3异 · 第三版-异格 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-异格/ | 像素点阵字体版：卡片无文字，弹窗文字乱码→0.5s 解码，开关机动画+音效，关闭后洗牌（建议戴耳机） |
 | V3三异 · 第三版-三异 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-三异/ | CCTV 入场界面 + 无限下滑 CRT 卡片流 + 纯红像素线条眼形光标（点击眨眼、520ms 颗粒噪点拖尾，触屏自动禁用） |
 | V3二异 · 第三版-二异 | https://caascd-curation.github.io/B7-MONITOR-CARD/第三版-二异/ | 无标题无尽循环 CRT 卡片流（5 行双份往返滚动）+ ⏻ 退出监控反向流程（CRT 关机音效 + 雪花屏回入场界面，可反复开关） |
-| V7 · 第七版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第七版/ | 螺旋上升 CRT 塔（仰视视角，塔底向上看）：50 块屏幕无限螺旋上升+自转，**滚轮调速**（下滚加速/上滚减速倒转，左下角有速度指示），巨型像素水印标题置于塔后，弹窗乱码解码 + 开关机音效（建议戴耳机） |
+| V7 · 第七版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第七版/ | 基于第三版-三异：CCTV 入场 + CRT 卡片流；点开卡片 CRT 开机雪花屏弹窗（音效+乱码解码），弹窗内「⌖ TOPO」按钮呼出**右侧独立可关的 THE COORDINATE 拓扑窗**——发光十字坐标轴+点阵节点图呈现该档案所属分类全部节点，被点开档案节点放大发光并标注名称与坐标，左右双窗可同时显示互不遮挡 |
 | V8 · 第八版 | https://caascd-curation.github.io/B7-MONITOR-CARD/第八版/ | 鱼眼镜头入场界面：镜头内为模糊监控画面，左上角实时年月日时间、右上角实时/累计浏览人数（像素点阵字体），点击后黑屏显示 "You are being monitored." → 闪烁雪花屏进入 CRT 卡片阵列（建议戴耳机） |
 | V8异 · 第八版异格 | https://caascd-curation.github.io/B7-MONITOR-CARD/第八版异格/ | 在第八版基础上新增右侧独立可关闭「素材拓扑」弹窗：十字坐标轴（横轴=空间形态 现实实体/虚拟叙事，纵轴=素材属性 客观纪实/艺术思辨），49 个素材空心方框节点 + 分类星座连线与跨分类关联虚线；双向联动——打开档案对应节点高亮显示名称，点击节点左侧弹窗切换素材详情（建议戴耳机） |
 
