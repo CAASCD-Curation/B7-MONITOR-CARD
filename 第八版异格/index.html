@@ -328,6 +328,12 @@ footer{
 }
 .mtopo:hover, .mtopo.on{color:var(--ink); border-color:var(--acc); box-shadow:0 0 10px rgba(200,214,192,.18)}
 .mtopo.on{color:#b8543f; border-color:#b8543f; box-shadow:0 0 10px rgba(184,84,63,.35)}
+.mtime{
+  margin-left:8px; background:none; border:1px solid #2a2d30; color:var(--dim);
+  padding:5px 10px; cursor:pointer; font-size:12px; letter-spacing:.14em; border-radius:4px; font-family:inherit;
+}
+.mtime:hover, .mtime.on{color:var(--ink); border-color:var(--acc); box-shadow:0 0 10px rgba(200,214,192,.18)}
+.mtime.on{color:#b8543f; border-color:#b8543f; box-shadow:0 0 10px rgba(184,84,63,.35)}
 .topo{
   position:fixed; top:0; right:0; bottom:0; z-index:220; width:440px;
   display:none; flex-direction:column;
@@ -405,6 +411,75 @@ footer{
 @media(max-width:760px){
   .topo{width:100vw}
   .modal.topo-on{padding-left:16px}
+}
+
+/* 时间线弹窗 · 右侧独立可关闭面板（拓扑旁边） */
+.tl{
+  position:fixed; top:0; right:0; bottom:0; z-index:224; width:400px;
+  display:none; flex-direction:column;
+  background:var(--panel); border-left:1px solid #000;
+  box-shadow:-24px 0 60px rgba(0,0,0,.7), inset 1px 0 0 rgba(255,255,255,.06);
+  animation:topo-in .32s cubic-bezier(.2,.8,.3,1) both;
+}
+.tl.show{display:flex}
+/* 与时间线同开时：时间线靠最右，拓扑面板左移让位 */
+.topo.tl-on{right:400px}
+.tlbody{
+  position:relative; flex:1; margin:14px; overflow-y:auto;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    #0b0d0f;
+  border:1px solid #1c2023; border-radius:4px;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+  padding:18px 12px 18px 0;
+}
+.tlbody::-webkit-scrollbar{width:10px}
+.tlbody::-webkit-scrollbar-thumb{background:#23272a;border:2px solid #0b0d0f}
+/* 竖向时间轴轴线 */
+.tlbody::before{
+  content:""; position:absolute; top:0; bottom:0; left:64px; width:1px;
+  background:linear-gradient(to bottom, transparent, #3a3e42 8%, #3a3e42 92%, transparent);
+}
+/* 时间轴条目 */
+.tl-item{
+  position:relative; display:flex; align-items:center; gap:10px; width:100%;
+  padding:7px 10px 7px 0; background:none; border:0; cursor:pointer;
+  font-family:inherit; text-align:left; color:var(--ink);
+}
+.tl-item:hover{background:rgba(200,214,192,.05)}
+.tl-item .yr{
+  flex:none; width:44px; text-align:right; font-size:12px; letter-spacing:.06em;
+  color:var(--dark); text-shadow:1px 1px 0 #000;
+}
+.tl-item .mk{
+  flex:none; width:9px; height:9px; margin-left:6px;
+  border:1px solid var(--dark); border-radius:1px; background:transparent;
+  box-shadow:0 0 0 3px #0b0d0f; transition:border-color .2s, box-shadow .2s;
+}
+.tl-item:hover .mk{border-color:var(--ink)}
+.tl-item .tx{
+  font-size:12px; letter-spacing:.08em; color:#b9bcb4; text-shadow:1px 1px 0 #000;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tl-item .ct{font-size:11px; color:#4a4d48; margin-left:6px; letter-spacing:.06em}
+.tl-item.on .mk{border-color:#ff3030; box-shadow:0 0 0 3px #0b0d0f, 0 0 8px rgba(255,48,48,.8); animation:node-blink 1.2s steps(1) infinite}
+.tl-item.on .tx{color:var(--ink)}
+.tl-item.on .yr{color:#d98d80}
+/* 年份不详分组 */
+.tl-na{
+  position:relative; margin:14px 0 6px; padding:6px 10px 6px 0;
+  font-size:12px; letter-spacing:.22em; color:#4a4d48; text-shadow:1px 1px 0 #000;
+  display:flex; align-items:center; gap:10px;
+}
+.tl-na::before{content:""; flex:none; width:44px}
+.tl-na i{flex:none; width:9px; height:9px; margin-left:6px; border:1px dashed #2a2d30; box-shadow:0 0 0 3px #0b0d0f}
+/* 双浮窗打开时档案弹窗避让 */
+.modal.topo-on.tl-on{padding-left:max(16px, calc((100vw - 1760px) / 2))}
+.modal.tl-on:not(.topo-on){justify-content:flex-start; padding-left:max(16px, calc((100vw - 1300px) / 2))}
+@media(max-width:760px){
+  .tl{width:100vw}
+  .topo.tl-on{right:0; z-index:219}
+  .modal.topo-on.tl-on, .modal.tl-on:not(.topo-on){padding-left:16px}
 }
 
 /* ── 入场界面 · 鱼眼镜头监控 ─────────────────────────── */
@@ -581,6 +656,7 @@ html,body,a,button,[role="button"]{cursor:none}
         <span class="rec"></span>
         <span class="code" id="mcode"></span>
         <button type="button" class="mtopo" id="mtopo" aria-label="打开素材拓扑">▣ TOPO 拓扑</button>
+        <button type="button" class="mtime" id="mtime" aria-label="打开素材时间线">◷ TIMELINE 时间线</button>
         <button type="button" class="mclose" id="mclose" aria-label="关闭">✕</button>
       </div>
       <div class="mbody">
@@ -613,8 +689,20 @@ html,body,a,button,[role="button"]{cursor:none}
   <div class="tfoot">X · 空间形态 — Y · 素材属性 / 点击方框节点切换左侧档案</div>
 </div>
 
+<!-- 时间线弹窗 · 右侧独立可关闭面板 -->
+<div class="tl" id="tl" role="dialog" aria-label="素材时间线">
+  <div class="ttitlebar">
+    <span class="rec"></span>
+    <span class="tcode">TIMELINE · 素材时间线</span>
+    <button type="button" class="mclose" id="tlclose" aria-label="关闭时间线">✕</button>
+  </div>
+  <div class="tlbody" id="tlbody"></div>
+  <div class="tfoot">按年份排序 — 点击条目跳转档案详情</div>
+</div>
+
 <script src="data.js"></script>
 <script src="topology.js"></script>
+<script src="timeline.js"></script>
 <script>
 /* ── 入场界面：鱼眼镜头 · 实时时钟 · 访问统计 · 点击宣言 → 雪花跳转 ─────────────────────────── */
 (function(){

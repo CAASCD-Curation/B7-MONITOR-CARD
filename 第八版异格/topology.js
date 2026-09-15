@@ -17,7 +17,7 @@
     49:[.25,.75], 50:[.95,.15],
     /* 社会素材 society */
     24:[.10,.90], 25:[.13,.85], 26:[.07,.92], 27:[.12,.86], 28:[.10,.88], 29:[.08,.90],
-    30:[.06,.91], 31:[.09,.90], 33:[.08,.89], 35:[.20,.80], 37:[.15,.82], 39:[.10,.85],
+    30:[.06,.91], 31:[.09,.90], 32:[.11,.91], 33:[.08,.89], 35:[.20,.80], 37:[.15,.82], 39:[.10,.85],
     43:[.14,.84], 44:[.22,.78],
     /* 形式灵感 form */
     8:[.35,.25], 18:[.30,.35], 19:[.55,.20], 20:[.40,.50], 21:[.45,.30], 22:[.50,.55],
@@ -160,6 +160,8 @@
   }
 
   /* ── 点击节点 → 跳转到对应素材的详情弹窗 ─────────────────────────── */
+  /* 供时间线面板复用；CASE_HOOKS 用于通知其他面板当前档案变化 */
+  window.CASE_HOOKS = [];
   function onNodeClick(it){
     const cat = catOf(it);
     if(modal.classList.contains('show') && !mbox.classList.contains('crt-off')){
@@ -225,7 +227,10 @@
     }, 500);
     currentNo = it.no;
     syncHighlight();
+    window.CASE_HOOKS.forEach(fn => { try{ fn(it.no); }catch(e){} });
   }
+
+  window.JUMP = onNodeClick; /* 时间线面板点击复用同一跳转逻辑 */
 
   /* ── 面板开关 ─────────────────────────── */
   function openTopo(){
@@ -259,6 +264,7 @@
       currentNo = it.no;
       _openCase(it, cat);
       syncHighlight();
+      window.CASE_HOOKS.forEach(fn => { try{ fn(it.no); }catch(e){} });
     };
   });
 
