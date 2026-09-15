@@ -567,13 +567,13 @@ html,body,a,button,[role="button"]{cursor:none}
       <span>历史浏览 <b id="vTotal">·</b> 人次</span>
     </div>
     <nav class="entry-menu" aria-label="入场菜单">
-      <div class="mi sel" data-i="0">&gt;&gt; CRUISE &#183; 自动轮巡</div>
-      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;PANOPTIC &#183; 全景</div>
+      <div class="mi sel" data-i="0">&gt;&gt; CRUISE自动轮巡</div>
+      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;PANOPTIC全景</div>
       <div class="mi" data-i="2">&nbsp;&nbsp;&nbsp;&nbsp;VOLUME<span class="vol">(55)</span></div>
       <div class="mi" data-i="3">&nbsp;&nbsp;&nbsp;&nbsp;SETTING</div>
     </nav>
   </div>
-  <div class="entry-foot">↑↓ 选择 · ENTER / 点击 确认</div>
+  <div class="entry-foot">↑↓ 选择 · ENTER 确认 / 点击菜单项直达</div>
 </div>
 
 <header>
@@ -708,6 +708,13 @@ html,body,a,button,[role="button"]{cursor:none}
     }, 860);
   };
   const pickMode = () => (sel === 1 ? 'panoptic' : 'cruise');
+  /* 点击菜单项直达对应界面（0=CRUISE自动轮巡卡片界面 / 1=PANOPTIC全景象限图）；
+     点击入场界面其余空白区域仍进入当前选中项 */
+  mis.forEach((el, i) => el.addEventListener('click', e => {
+    e.stopPropagation();
+    sel = i; render();
+    if(i <= 1) enter(i === 1 ? 'panoptic' : 'cruise');
+  }));
   entry.addEventListener('click', () => enter(pickMode()));
   document.addEventListener('keydown', e => {
     if(entered) return;
