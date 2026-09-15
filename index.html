@@ -331,6 +331,80 @@ footer{
 #mbox{transition:margin .45s cubic-bezier(.2,.7,.3,1)}
 body.topo-on #mbox{margin-right:min(430px,94vw)}
 
+/* ── PANOPTIC 四象限图 ─────────────────────────── */
+#quad{
+  display:none; position:fixed; inset:0; z-index:60;
+  background:#07090b;
+}
+body.view-quad #quad{display:block}
+body.view-quad header, body.view-quad .stage, body.view-quad footer{display:none}
+.quad-head{
+  position:relative; z-index:5; display:flex; align-items:center; gap:10px;
+  padding:14px 20px; font-size:13px; letter-spacing:.22em; color:var(--dim);
+  border-bottom:1px solid #16191c; background:rgba(7,9,11,.9);
+}
+.quad-head .rdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.quad-head .qtitle{color:var(--ink); letter-spacing:.3em}
+.qmenu{
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--acc);
+  padding:5px 12px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+  letter-spacing:.14em;
+}
+.qmenu:hover{border-color:var(--acc); background:rgba(200,214,192,.08);}
+.quad-stage{
+  position:absolute; inset:57px 0 0 0; overflow:hidden;
+  background-image:radial-gradient(rgba(200,214,200,.10) 1px, transparent 1.5px);
+  background-size:16px 16px;
+}
+.qaxis-x{position:absolute; left:0; right:0; top:50%; height:2px; transform:translateY(-50%);
+  background:linear-gradient(to right, rgba(255,120,60,0), rgba(255,150,80,.7) 25%, rgba(255,180,95,.9) 50%, rgba(255,150,80,.7) 75%, rgba(255,120,60,0));
+  box-shadow:0 0 14px rgba(255,140,70,.4);}
+.qaxis-y{position:absolute; top:0; bottom:0; left:50%; width:2px; transform:translateX(-50%);
+  background:linear-gradient(to bottom, rgba(255,120,60,0), rgba(255,150,80,.7) 25%, rgba(255,180,95,.9) 50%, rgba(255,150,80,.7) 75%, rgba(255,120,60,0));
+  box-shadow:0 0 14px rgba(255,140,70,.4);}
+.qlab{position:absolute; font-size:13px; letter-spacing:.3em; color:#8a8f88; text-shadow:1px 1px 0 #000; white-space:nowrap;}
+.qlab-l{left:18px; top:50%; transform:translateY(-50%);}
+.qlab-r{right:18px; top:50%; transform:translateY(-50%);}
+.qlab-t{top:14px; left:50%; transform:translateX(-50%);}
+.qlab-b{bottom:14px; left:50%; transform:translateX(-50%);}
+.qtag{position:absolute; font-size:11px; letter-spacing:.18em; color:#4a4f49;}
+.qtag-tl{top:44px; left:18px;}
+.qtag-tr{top:44px; right:18px;}
+.qtag-bl{bottom:44px; left:18px;}
+.qtag-br{bottom:44px; right:18px;}
+.qdot{
+  position:absolute; width:6px; height:6px; transform:translate(-50%,-50%);
+  background:#9fb39f; box-shadow:0 0 6px rgba(160,200,160,.3);
+  transition:transform .12s steps(3); padding:0; border:none;
+}
+.qdot:hover, .qdot.on{
+  transform:translate(-50%,-50%) scale(3);
+  background:var(--ink);
+  box-shadow:0 0 0 2px rgba(239,239,231,.25), 0 0 18px rgba(242,242,234,.8);
+  z-index:4;
+}
+.qpreview{
+  display:none; position:absolute; z-index:6; pointer-events:none;
+  width:150px; background:#0c0f12; border:2px solid #2a2d30;
+  box-shadow:0 0 24px rgba(0,0,0,.8), 0 0 14px rgba(200,214,192,.12);
+}
+.qpreview img{display:block; width:100%; height:100px; object-fit:cover; image-rendering:auto;}
+.qpreview .qp-title{
+  padding:6px 8px; font-size:11px; letter-spacing:.1em; color:var(--ink);
+  border-top:1px solid #1c2024; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.qpreview .qp-no{color:var(--dark); margin-right:6px;}
+
+/* 卡片界面 MENU 主菜单键 */
+.menu-btn{
+  position:fixed; right:22px; bottom:22px; z-index:120;
+  background:rgba(10,13,16,.88); border:1px solid #2a2d30; color:var(--acc);
+  padding:8px 16px; cursor:pointer; font-size:13px; border-radius:4px; font-family:inherit;
+  letter-spacing:.18em; box-shadow:0 0 18px rgba(0,0,0,.6);
+}
+.menu-btn:hover{border-color:var(--acc); background:rgba(200,214,192,.1);}
+body.locked .menu-btn, body.view-quad .menu-btn{display:none;}
+
 /* CRT 开机序列 */
 .boot-line{
   position:absolute; left:0; right:0; top:50%; height:3px; z-index:30;
@@ -493,9 +567,10 @@ html,body,a,button,[role="button"]{cursor:none}
       <span>历史浏览 <b id="vTotal">·</b> 人次</span>
     </div>
     <nav class="entry-menu" aria-label="入场菜单">
-      <div class="mi sel" data-i="0">&gt;&gt; LOGIN</div>
-      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;VOLUME<span class="vol">(55)</span></div>
-      <div class="mi" data-i="2">&nbsp;&nbsp;&nbsp;&nbsp;SETTING</div>
+      <div class="mi sel" data-i="0">&gt;&gt; CRUISE &#183; 自动轮巡</div>
+      <div class="mi" data-i="1">&nbsp;&nbsp;&nbsp;&nbsp;PANOPTIC &#183; 全景</div>
+      <div class="mi" data-i="2">&nbsp;&nbsp;&nbsp;&nbsp;VOLUME<span class="vol">(55)</span></div>
+      <div class="mi" data-i="3">&nbsp;&nbsp;&nbsp;&nbsp;SETTING</div>
     </nav>
   </div>
   <div class="entry-foot">↑↓ 选择 · ENTER / 点击 确认</div>
@@ -507,6 +582,30 @@ html,body,a,button,[role="button"]{cursor:none}
 </header>
 
 <main class="stage" id="stage"></main>
+
+<button type="button" class="menu-btn" id="menuBtn">&#9776; MENU &#183; 主菜单</button>
+
+<!-- PANOPTIC 全景象限图 -->
+<section id="quad" aria-label="全景象限图">
+  <div class="quad-head">
+    <span class="rdot"></span>
+    <span>CAM-88</span>
+    <span class="qtitle">PANOPTIC MATRIX &#183; 全景坐标</span>
+    <button type="button" class="qmenu" id="qmenu">&#9776; MENU &#183; 主菜单</button>
+  </div>
+  <div class="quad-stage" id="quadStage">
+    <div class="qaxis-x"></div><div class="qaxis-y"></div>
+    <span class="qlab qlab-l">&#9664; 现实实体空间</span>
+    <span class="qlab qlab-r">虚拟叙事空间 &#9654;</span>
+    <span class="qlab qlab-t">&#9650; 艺术思辨意象</span>
+    <span class="qlab qlab-b">&#9660; 客观纪实素材</span>
+    <span class="qtag qtag-tl">Q&#8553; 现实实体 &#215; 艺术思辨</span>
+    <span class="qtag qtag-tr">Q&#8554; 虚拟叙事 &#215; 艺术思辨</span>
+    <span class="qtag qtag-bl">Q&#8552; 现实实体 &#215; 客观纪实</span>
+    <span class="qtag qtag-br">Q&#8555; 虚拟叙事 &#215; 客观纪实</span>
+    <div class="qpreview" id="qpreview"><img alt=""><div class="qp-title"></div></div>
+  </div>
+</section>
 
 <canvas id="eyeLayer" aria-hidden></canvas>
 
@@ -593,9 +692,11 @@ html,body,a,button,[role="button"]{cursor:none}
   mis.forEach(el => el.dataset.label = el.textContent.trim().replace(/^>>\s*/, '').replace(/\s*\(55\)$/, ''));
   render();
 
-  /* 确认进入：CRT 开机音效 + 雪花噪点过渡后切换到卡片界面 */
+  /* 确认进入：CRT 开机音效 + 雪花噪点过渡后切换到所选界面
+     sel 0 = CRUISE 自动轮巡（卡片界面） / sel 1 = PANOPTIC 全景（象限图） */
   let entered = false;
-  const enter = () => {
+  const showView = mode => document.body.classList.toggle('view-quad', mode === 'panoptic');
+  const enter = mode => {
     if(entered) return;
     entered = true;
     playPowerOn();
@@ -603,15 +704,29 @@ html,body,a,button,[role="button"]{cursor:none}
     setTimeout(() => {
       entry.style.display = 'none';
       document.body.classList.remove('locked');
+      showView(mode);
     }, 860);
   };
-  entry.addEventListener('click', enter);
+  const pickMode = () => (sel === 1 ? 'panoptic' : 'cruise');
+  entry.addEventListener('click', () => enter(pickMode()));
   document.addEventListener('keydown', e => {
     if(entered) return;
     if(e.key === 'ArrowUp'){ e.preventDefault(); sel = (sel + mis.length - 1) % mis.length; render(); }
     if(e.key === 'ArrowDown'){ e.preventDefault(); sel = (sel + 1) % mis.length; render(); }
-    if(e.key === 'Enter'){ e.preventDefault(); enter(); }
+    if(e.key === 'Enter'){ e.preventDefault(); enter(pickMode()); }
   });
+
+  /* 返回入场主菜单（卡片界面 / 象限图界面通用） */
+  window.backToEntry = () => {
+    if(!entered) return;
+    try{ playPowerOff(); }catch(err){}
+    document.body.classList.remove('view-quad');
+    document.body.classList.add('locked');
+    entry.classList.remove('exiting');
+    entry.style.display = '';
+    entered = false;
+    window.scrollTo(0, 0);
+  };
 })();
 
 /* ── 渲染屏幕阵列 ─────────────────────────── */
@@ -908,6 +1023,49 @@ function closeTopo(){
   topoEl.classList.remove('show');
   document.body.classList.remove('topo-on');
 }
+
+/* ── PANOPTIC 四象限图：点阵分布 + 悬停放大预览 + 点击弹窗 ─────────── */
+(function(){
+  const qstage = document.getElementById('quadStage');
+  const qprev = document.getElementById('qpreview');
+  const qprevImg = qprev.querySelector('img');
+  const qprevTitle = qprev.querySelector('.qp-title');
+  const QP = window.QUADPOS || {};
+
+  items.forEach(it => {
+    const cat = window.CATEGORIES.find(c => c.key === it.category);
+    const pos = QP[it.no] || [((it.no * 37) % 17) - 8, ((it.no * 53) % 17) - 8];
+    const x = Math.max(-9.6, Math.min(9.6, pos[0]));
+    const y = Math.max(-9.6, Math.min(9.6, pos[1]));
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'qdot';
+    b.style.left = ((x + 10) / 20 * 100) + '%';
+    b.style.top = ((10 - y) / 20 * 100) + '%';
+    b.setAttribute('aria-label', `查看《${it.title}》详情`);
+    b.addEventListener('mouseenter', () => {
+      if(!it.broken && !it.noImage) qprevImg.src = 'img/img-' + String(it.no).padStart(2,'0') + '.jpg';
+      else qprevImg.removeAttribute('src');
+      qprevImg.alt = it.title;
+      qprevTitle.innerHTML = '<span class="qp-no">NO.' + pad(it.no) + '</span>《' + it.title + '》';
+      /* 预览卡片贴在点旁边，靠右/下时翻到左/上 */
+      const sr = qstage.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      let px = br.left - sr.left + 16, py = br.top - sr.top + 16;
+      if(px + 158 > sr.width) px = br.left - sr.left - 166;
+      if(py + 132 > sr.height) py = br.top - sr.top - 136;
+      qprev.style.left = Math.max(6, px) + 'px';
+      qprev.style.top = Math.max(6, py) + 'px';
+      qprev.style.display = 'block';
+    });
+    b.addEventListener('mouseleave', () => { qprev.style.display = 'none'; });
+    b.addEventListener('click', () => { qprev.style.display = 'none'; openCase(it, cat); });
+    qstage.appendChild(b);
+  });
+
+  document.getElementById('qmenu').addEventListener('click', window.backToEntry);
+  document.getElementById('menuBtn').addEventListener('click', window.backToEntry);
+})();
 
 
 /* ── 像素红眼自定义光标（纯红线条眼形 + 颗粒噪点拖尾，点击眨眼） ─────────────────────────── */
