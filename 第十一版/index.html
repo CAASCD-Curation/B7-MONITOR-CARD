@@ -520,10 +520,9 @@ body.view-quad .quad-head{padding-left:clamp(220px, 25vw, 330px)}
   60%{opacity:.9; filter:brightness(2)}
   100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
 }
-#snowCanvas{
-  position:fixed; inset:0; z-index:400; display:none;
-  width:100vw; height:100vh;
-  image-rendering:pixelated; image-rendering:crisp-edges;
+#glitchCanvas{
+  position:fixed; inset:0; z-index:450; display:none;
+  width:100vw; height:100vh; background:#000;
 }
 body.locked{overflow:hidden}
 
@@ -552,7 +551,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     </nav>
   </div>
 </div>
-<canvas id="snowCanvas" aria-hidden></canvas>
+<canvas id="glitchCanvas" aria-hidden></canvas>
 
 <header>
   <h1>监控室<span class="en">MONITOR ROOM · B10</span></h1>
@@ -763,47 +762,98 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   let feTimer = 0;
   addEventListener('resize', () => { clearTimeout(feTimer); feTimer = setTimeout(renderFisheye, 200); });
 
-  /* 全屏 CRT 雪花噪点故障屏：随机黑白彩噪颗粒 + 扫描横线 + 色偏分离 + 行撕裂 */
-  const sc = document.getElementById('snowCanvas');
-  const sctx = sc.getContext('2d');
-  sctx.imageSmoothingEnabled = false;
-  const snowBurst = (dur, done) => {
-    const DUR = dur || 780;
-    sc.width = Math.ceil(innerWidth / 3); sc.height = Math.ceil(innerHeight / 3);
-    sc.style.display = 'block';
-    const t0 = performance.now();
-    const step = () => {
-      const w = sc.width, h = sc.height;
-      const img = sctx.createImageData(w, h);
-      const d = img.data;
-      const bandY = ((performance.now() * 0.35) | 0) % h;   /* 滚动亮带 */
-      const tearY = (Math.random() * h) | 0, tearD = ((Math.random() * 30) | 0) - 15; /* 撕裂行偏移 */
-      for(let y = 0; y < h; y++){
-        const scan = (y % 3 === 0) ? 0.5 : 1;               /* 扫描暗线 */
-        const band = Math.abs(y - bandY) < 5 ? 1.6 : 1;
-        const tear = Math.abs(y - tearY) < 8 ? tearD : 0;
-        for(let x = 0; x < w; x++){
-          const i = (y * w + x) * 4;
-          const v = Math.random();
-          let r, g2, b;
-          if(v < 0.014){                                      /* 彩色噪点 */
-            r = 60 + Math.random() * 195; g2 = Math.random() * 150; b = 60 + Math.random() * 195;
-          }else{                                              /* 黑白噪 */
-            g2 = Math.random() < 0.5 ? 225 + Math.random() * 30 : Math.random() * 85;
-            r = g2; b = g2;
-          }
-          if(Math.random() < 0.035){                          /* 色偏分离：随机通道错位脉冲 */
-            const dv = 40 + Math.random() * 70;
-            if(Math.random() < 0.5) r = Math.min(255, r + dv); else b = Math.min(255, b + dv);
-            if(tear) g2 = Math.min(255, g2 + dv * 0.5);
-          }
-          const m = scan * band;
-          d[i] = r * m; d[i + 1] = g2 * m; d[i + 2] = b * m; d[i + 3] = 255;
+  /* ── 全屏数字故障艺术 glitch（VDMX 故障风）：RGB 通道分离 + 水平切片错位 + 数据色块 + 频闪 ──
+     对当前鱼眼画面实时故障化，持续 dur 毫秒后进入目标界面 */
+  const gc = document.getElementById('glitchCanvas');
+  const gctx = gc.getContext('2d');
+  let gbRunning = false;
+  const glitchBurst = (dur, done) => {
+    if(gbRunning) return;
+    gbRunning = true;
+    const DUR = dur || 300;
+    const W = gc.width = innerWidth, H = gc.height = innerHeight;
+    gc.style.display = 'block';
+
+    /* 预计算：抓鱼眼画面帧，拆出 R/G/B 三个单通道画布（之后每帧只做偏移叠加，极快） */
+    const chans = [];
+    const sw = feC.width, sh = feC.height;
+    if(sw > 4 && feImg){
+      const sd = feCtx.getImageData(0, 0, sw, sh).data;
+      for(let k = 0; k < 3; k++){
+        const c = document.createElement('canvas');
+        c.width = sw; c.height = sh;
+        const x = c.getContext('2d');
+        const im = x.createImageData(sw, sh);
+        const d = im.data;
+        for(let i = 0; i < d.length; i += 4){
+          d[i]     = k === 0 ? sd[i] : 0;
+          d[i + 1] = k === 1 ? sd[i + 1] : 0;
+          d[i + 2] = k === 2 ? sd[i + 2] : 0;
+          d[i + 3] = 255;
         }
+        x.putImageData(im, 0, 0);
+        chans.push(c);
       }
-      sctx.putImageData(img, 0, 0);
-      if(performance.now() - t0 < DUR) requestAnimationFrame(step);
-      else { sc.style.display = 'none'; done && done(); }
+    }
+    /* 全屏 cover 参数 */
+    const cover = c => {
+      const s = Math.max(W / c.width, H / c.height);
+      return [(W - c.width * s) / 2, (H - c.height * s) / 2, c.width * s, c.height * s];
+    };
+    const t0 = performance.now();
+    const GLITCH_COLORS = ['#ff00c8', '#00fff2', '#b6ff00', '#ffea00', '#7b2fff'];
+    const step = () => {
+      const t = performance.now(), p = (t - t0) / DUR;
+      gctx.globalCompositeOperation = 'source-over';
+      gctx.globalAlpha = 1;
+      gctx.fillStyle = '#000';
+      gctx.fillRect(0, 0, W, H);
+      if(chans.length === 3){                       /* RGB 通道分离：偏移量随故障进度抖动 */
+        gctx.globalCompositeOperation = 'lighter';
+        const amp = 8 + 46 * Math.min(1, p * 2) * (0.5 + Math.random() * 0.9);
+        const [cx0, cy0, cw, ch] = cover(chans[0]);
+        const dy0 = (Math.random() - 0.5) * 12;
+        gctx.drawImage(chans[0], cx0 - amp, cy0 + dy0, cw, ch);
+        gctx.drawImage(chans[1], cx0, cy0, cw, ch);
+        gctx.drawImage(chans[2], cx0 + amp, cy0 - dy0, cw, ch);
+        gctx.globalCompositeOperation = 'source-over';
+      }
+      /* 水平切片错位（条带数与幅度随进度增加） */
+      const slices = 4 + Math.floor(p * 10);
+      for(let i = 0; i < slices; i++){
+        const y0 = Math.random() * H;
+        const hh = 4 + Math.random() * (20 + p * 60);
+        const dx = (Math.random() - 0.5) * (40 + p * 220);
+        gctx.drawImage(gc, 0, y0, W, hh, dx, y0, W, hh);
+      }
+      /* 数据损坏色块 */
+      const blocks = 3 + Math.floor(p * 8);
+      for(let i = 0; i < blocks; i++){
+        gctx.globalAlpha = 0.35 + Math.random() * 0.55;
+        gctx.fillStyle = GLITCH_COLORS[(Math.random() * GLITCH_COLORS.length) | 0];
+        gctx.fillRect(Math.random() * W, Math.random() * H,
+                      20 + Math.random() * 220, 3 + Math.random() * 26);
+      }
+      /* 扫描暗线 + 随机频闪反相带 */
+      gctx.globalAlpha = 1;
+      gctx.fillStyle = 'rgba(0,0,0,.35)';
+      for(let y = (t / 40 | 0) % 4; y < H; y += 4) gctx.fillRect(0, y, W, 1);
+      if(Math.random() < 0.4){
+        gctx.globalCompositeOperation = 'difference';
+        gctx.fillStyle = '#fff';
+        gctx.fillRect(0, Math.random() * H, W, 6 + Math.random() * 40);
+        gctx.globalCompositeOperation = 'source-over';
+      }
+      if(Math.random() < 0.3){                        /* 全屏频闪 */
+        gctx.fillStyle = 'rgba(255,255,255,' + (0.08 + Math.random() * 0.2) + ')';
+        gctx.fillRect(0, 0, W, H);
+      }
+      if(t - t0 < DUR) requestAnimationFrame(step);
+      else {
+        gc.style.display = 'none';
+        gbRunning = false;
+        done && done();
+      }
     };
     requestAnimationFrame(step);
   };
@@ -821,12 +871,12 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     if(entered) return;
     entered = true;
     playPowerOn();
-    snowBurst(300);                 /* CRT 雪花故障屏快切 0.3s */
+    glitchBurst(300);                /* 数字故障快切 0.3s */
     entry.classList.add('exiting');
     entry.style.animationDuration = '.3s';   /* 退出动画同步提速 */
     setTimeout(() => {
       entry.style.display = 'none';
-      sc.style.display = 'none';
+      gc.style.display = 'none';
       document.body.classList.remove('locked');
       showView(mode);
     }, 300);
@@ -836,7 +886,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     if(entered) return;
     if(!activated){
       activated = true;
-      snowBurst(300, () => menu.classList.add('on'));   /* 0.3s 快切 */
+      glitchBurst(300, () => menu.classList.add('on'));  /* 0.3s 故障快切 */
       return;
     }
   });
