@@ -477,7 +477,8 @@ body.locked .menu-btn, body.view-quad .menu-btn{display:none;}
     inset 0 0 2vmin rgba(255,255,255,.03),
     0 0 10vmin rgba(0,0,0,.9);
 }
-#lensCanvas{position:absolute; inset:0; width:100%; height:100%}
+#fisheyeCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:0}
+#lensCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:1}
 .lens-hud{
   position:absolute; top:15.5%; left:16%; z-index:5;
   display:flex; flex-direction:column; gap:7px;
@@ -552,6 +553,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
 <!-- 入场界面：鱼眼监控镜头 -->
 <div class="entry" id="entry" role="button" aria-label="进入监控室档案">
   <div class="lens" id="lens">
+    <canvas id="fisheyeCanvas" aria-hidden></canvas>
     <canvas id="lensCanvas" aria-hidden></canvas>
     <div class="lens-hud">
       <div class="lens-clock"><span class="rec"></span><span id="clock">---- -- -- · -- -- --</span></div>
@@ -757,23 +759,136 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawTitle);
   addEventListener('resize', drawTitle);
 
-  /* 全屏雪花屏爆发 */
+  /* ── 入场遮罩背景：随机档案图 + 模糊 + Canvas 实时鱼眼球面畸变 ───────────────────────────
+     畸变强度可调：URL 参数 ?fisheye=0~1（默认 0.35）；每次刷新随机选图 */
+  const FISHEYE_STRENGTH = (() => {
+    const v = parseFloat(new URLSearchParams(location.search).get('fisheye'));
+    return (isFinite(v) && v >= 0 && v <= 1) ? v : 0.35;
+  })();
+  window.__fisheye = FISHEYE_STRENGTH;
+
+  const feC = document.getElementById('fisheyeCanvas');
+  const feCtx = feC.getContext('2d');
+  let feImg = null, feNo = 0;
+  window.__entryImg = () => feNo;
+
+  const imgPath = n => 'img/img-' + String(n).padStart(2, '0') + '.jpg';
+  /* 可选图池：与主站一致，剔除 broken / noImage 档案（如 img-32） */
+  const FE_POOL = (window.ITEMS || []).filter(it => !it.broken && !it.noImage).map(it => it.no);
+  const pickNo = () => FE_POOL.length ? FE_POOL[Math.floor(Math.random() * FE_POOL.length)]
+                                      : 1 + Math.floor(Math.random() * 50);
+
+  /* 预加载其余各图到浏览器缓存（空闲时），下次刷新随机图即取即得 */
+  const preloadRest = () => {
+    for(const n of FE_POOL){
+      if(n !== feNo){ const im = new Image(); im.src = imgPath(n); }
+    }
+  };
+
+  const renderFisheye = () => {
+    const r = lens.getBoundingClientRect();
+    if(r.width < 10) return;
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);   /* 逐像素重采样，限制分辨率保性能 */
+    const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    feC.width = W; feC.height = H;
+    if(!feImg || !feImg.naturalWidth) return;
+    /* 1) 源缓冲：cover 填充 + 高斯模糊（原图不做任何修改，仅实时变换） */
+    const src = document.createElement('canvas');
+    src.width = W; src.height = H;
+    const sctx = src.getContext('2d');
+    const iw = feImg.naturalWidth, ih = feImg.naturalHeight;
+    const sc2 = Math.max(W / iw, H / ih);
+    const dw = iw * sc2, dh = ih * sc2;
+    if(typeof sctx.filter === 'string'){
+      sctx.filter = 'blur(' + Math.round(9 * dpr) + 'px)';
+      sctx.drawImage(feImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      sctx.filter = 'none';
+    }else{  /* 旧内核回退：缩至极小再放大 = 双线性模糊 */
+      const t = document.createElement('canvas');
+      t.width = Math.max(2, W >> 4); t.height = Math.max(2, H >> 4);
+      t.getContext('2d').drawImage(feImg, 0, 0, t.width, t.height);
+      sctx.drawImage(t, 0, 0, t.width, t.height, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    }
+    /* 2) 鱼眼球面畸变（逆映射逐像素采样）：中心轻微放大、边缘向外膨胀拉伸、弧形弯曲 */
+    const sd = sctx.getImageData(0, 0, W, H).data;
+    const out = feCtx.createImageData(W, H);
+    const od = out.data;
+    const cx = W / 2, cy = H / 2, hx = W / 2, hy = H / 2, S = FISHEYE_STRENGTH;
+    for(let y = 0; y < H; y++){
+      const dy = (y - cy) / hy;
+      for(let x = 0; x < W; x++){
+        const dx = (x - cx) / hx;
+        const r2 = dx * dx + dy * dy;
+        const f = 1 - S * r2;                       /* barrel：越靠边缘采样点越向中心收 → 边缘膨胀 */
+        let sx = (cx + dx * f * hx) | 0, sy = (cy + dy * f * hy) | 0;
+        if(sx < 0) sx = 0; else if(sx >= W) sx = W - 1;
+        if(sy < 0) sy = 0; else if(sy >= H) sy = H - 1;
+        const si = (sy * W + sx) * 4, oi = (y * W + x) * 4;
+        od[oi] = sd[si]; od[oi + 1] = sd[si + 1]; od[oi + 2] = sd[si + 2]; od[oi + 3] = 255;
+      }
+    }
+    feCtx.putImageData(out, 0, 0);
+    /* 3) 镜头暗角 + 整体压暗（保证文字可读） */
+    const g = feCtx.createRadialGradient(cx, cy, H * 0.18, cx, cy, H * 0.72);
+    g.addColorStop(0, 'rgba(2,3,4,0.10)');
+    g.addColorStop(0.72, 'rgba(2,3,4,0.42)');
+    g.addColorStop(1, 'rgba(2,3,4,0.90)');
+    feCtx.fillStyle = g;
+    feCtx.fillRect(0, 0, W, H);
+  };
+
+  /* 每次刷新随机抽一张；图片加载完成后渲染，空闲时预载其余；加载失败自动换图 */
+  let feTries = 0;
+  const loadFe = () => {
+    feNo = pickNo();
+    const im = new Image();
+    im.onload = () => { feImg = im; renderFisheye(); };
+    im.onerror = () => { if(++feTries < 10) loadFe(); };
+    im.src = imgPath(feNo);
+  };
+  loadFe();
+  if(window.requestIdleCallback) requestIdleCallback(() => preloadRest(), { timeout: 3000 });
+  else setTimeout(preloadRest, 1500);
+  let feTimer = 0;
+  addEventListener('resize', () => { clearTimeout(feTimer); feTimer = setTimeout(renderFisheye, 200); });
+
+  /* 全屏 CRT 雪花噪点故障屏：随机黑白彩噪颗粒 + 扫描横线 + 色偏分离 + 行撕裂 */
   const sc = document.getElementById('snowCanvas');
   const sctx = sc.getContext('2d');
   sctx.imageSmoothingEnabled = false;
-  const snowBurst = done => {
+  const snowBurst = (dur, done) => {
+    const DUR = dur || 780;
     sc.width = Math.ceil(innerWidth / 3); sc.height = Math.ceil(innerHeight / 3);
     sc.style.display = 'block';
-    const t0 = performance.now(), DUR = 780;
+    const t0 = performance.now();
     const step = () => {
-      const img = sctx.createImageData(sc.width, sc.height);
+      const w = sc.width, h = sc.height;
+      const img = sctx.createImageData(w, h);
       const d = img.data;
-      for(let i = 0; i < d.length; i += 4){
-        const v = Math.random();
-        let g;
-        if(v < 0.985){ g = Math.random() < 0.5 ? 255 : (Math.random() * 90) | 0; d[i] = d[i+1] = d[i+2] = g; }
-        else { d[i] = 224; d[i+1] = 72; d[i+2] = 58; }  /* 偶发红点噪 */
-        d[i+3] = 255;
+      const bandY = ((performance.now() * 0.35) | 0) % h;   /* 滚动亮带 */
+      const tearY = (Math.random() * h) | 0, tearD = ((Math.random() * 30) | 0) - 15; /* 撕裂行偏移 */
+      for(let y = 0; y < h; y++){
+        const scan = (y % 3 === 0) ? 0.5 : 1;               /* 扫描暗线 */
+        const band = Math.abs(y - bandY) < 5 ? 1.6 : 1;
+        const tear = Math.abs(y - tearY) < 8 ? tearD : 0;
+        for(let x = 0; x < w; x++){
+          const i = (y * w + x) * 4;
+          const v = Math.random();
+          let r, g2, b;
+          if(v < 0.014){                                      /* 彩色噪点 */
+            r = 60 + Math.random() * 195; g2 = Math.random() * 150; b = 60 + Math.random() * 195;
+          }else{                                              /* 黑白噪 */
+            g2 = Math.random() < 0.5 ? 225 + Math.random() * 30 : Math.random() * 85;
+            r = g2; b = g2;
+          }
+          if(Math.random() < 0.035){                          /* 色偏分离：随机通道错位脉冲 */
+            const dv = 40 + Math.random() * 70;
+            if(Math.random() < 0.5) r = Math.min(255, r + dv); else b = Math.min(255, b + dv);
+            if(tear) g2 = Math.min(255, g2 + dv * 0.5);
+          }
+          const m = scan * band;
+          d[i] = r * m; d[i + 1] = g2 * m; d[i + 2] = b * m; d[i + 3] = 255;
+        }
       }
       sctx.putImageData(img, 0, 0);
       if(performance.now() - t0 < DUR) requestAnimationFrame(step);
@@ -795,9 +910,11 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     if(entered) return;
     entered = true;
     playPowerOn();
+    snowBurst(860);                 /* CRT 雪花故障屏覆盖整个跳转过程 */
     entry.classList.add('exiting');
     setTimeout(() => {
       entry.style.display = 'none';
+      sc.style.display = 'none';
       document.body.classList.remove('locked');
       showView(mode);
     }, 860);
@@ -808,7 +925,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     if(!activated){
       activated = true;
       hint.style.display = 'none';
-      snowBurst(() => menu.classList.add('on'));
+      snowBurst(780, () => menu.classList.add('on'));
       return;
     }
   });
