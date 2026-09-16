@@ -792,25 +792,31 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
     feC.width = W; feC.height = H;
     if(!feImg || !feImg.naturalWidth) return;
-    /* 1) 源缓冲：cover 填充 + 高斯模糊（原图不做任何修改，仅实时变换） */
-    const src = document.createElement('canvas');
-    src.width = W; src.height = H;
-    const sctx = src.getContext('2d');
+    /* 1) 双源缓冲：轻度模糊（中心）+ 重度模糊（边缘），cover 填充（原图不做任何修改，仅实时变换） */
     const iw = feImg.naturalWidth, ih = feImg.naturalHeight;
     const sc2 = Math.max(W / iw, H / ih);
     const dw = iw * sc2, dh = ih * sc2;
-    if(typeof sctx.filter === 'string'){
-      sctx.filter = 'blur(' + Math.round(9 * dpr) + 'px)';
-      sctx.drawImage(feImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      sctx.filter = 'none';
-    }else{  /* 旧内核回退：缩至极小再放大 = 双线性模糊 */
-      const t = document.createElement('canvas');
-      t.width = Math.max(2, W >> 4); t.height = Math.max(2, H >> 4);
-      t.getContext('2d').drawImage(feImg, 0, 0, t.width, t.height);
-      sctx.drawImage(t, 0, 0, t.width, t.height, (W - dw) / 2, (H - dh) / 2, dw, dh);
-    }
-    /* 2) 鱼眼球面畸变（逆映射逐像素采样）：中心轻微放大、边缘向外膨胀拉伸、弧形弯曲 */
-    const sd = sctx.getImageData(0, 0, W, H).data;
+    const dx0 = (W - dw) / 2, dy0 = (H - dh) / 2;
+    const mkSrc = blurPx => {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      if(typeof x.filter === 'string'){
+        x.filter = 'blur(' + Math.round(blurPx * dpr) + 'px)';
+        x.drawImage(feImg, dx0, dy0, dw, dh);
+        x.filter = 'none';
+      }else{  /* 旧内核回退：缩至极小再放大 = 双线性模糊 */
+        const sh = blurPx > 8 ? 3 : 5;   /* 模糊越大缩得越小 */
+        const t = document.createElement('canvas');
+        t.width = Math.max(2, W >> sh); t.height = Math.max(2, H >> sh);
+        t.getContext('2d').drawImage(feImg, 0, 0, t.width, t.height);
+        x.drawImage(t, 0, 0, t.width, t.height, dx0, dy0, dw, dh);
+      }
+      return x.getImageData(0, 0, W, H).data;
+    };
+    const sdSharp = mkSrc(3), sdBlur = mkSrc(16);
+    /* 2) 鱼眼球面畸变（逆映射逐像素采样）：中心轻微放大、边缘向外膨胀拉伸、弧形弯曲；
+          越靠边缘越混入重度模糊 → 边缘更模糊 */
     const out = feCtx.createImageData(W, H);
     const od = out.data;
     const cx = W / 2, cy = H / 2, hx = W / 2, hy = H / 2, S = FISHEYE_STRENGTH;
@@ -824,15 +830,21 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
         if(sx < 0) sx = 0; else if(sx >= W) sx = W - 1;
         if(sy < 0) sy = 0; else if(sy >= H) sy = H - 1;
         const si = (sy * W + sx) * 4, oi = (y * W + x) * 4;
-        od[oi] = sd[si]; od[oi + 1] = sd[si + 1]; od[oi + 2] = sd[si + 2]; od[oi + 3] = 255;
+        const b = r2 * 0.65 > 1 ? 1 : r2 * 0.65;    /* 边缘模糊权重：中心 0 → 角部 1 */
+        od[oi]     = sdSharp[si]     * (1 - b) + sdBlur[si]     * b;
+        od[oi + 1] = sdSharp[si + 1] * (1 - b) + sdBlur[si + 1] * b;
+        od[oi + 2] = sdSharp[si + 2] * (1 - b) + sdBlur[si + 2] * b;
+        od[oi + 3] = 255;
       }
     }
     feCtx.putImageData(out, 0, 0);
-    /* 3) 镜头暗角 + 整体压暗（保证文字可读） */
-    const g = feCtx.createRadialGradient(cx, cy, H * 0.18, cx, cy, H * 0.72);
-    g.addColorStop(0, 'rgba(2,3,4,0.10)');
-    g.addColorStop(0.72, 'rgba(2,3,4,0.42)');
-    g.addColorStop(1, 'rgba(2,3,4,0.90)');
+    /* 3) 镜头暗角：越到边缘越暗（保证文字可读） */
+    const g = feCtx.createRadialGradient(cx, cy, H * 0.12, cx, cy, H * 0.52);
+    g.addColorStop(0, 'rgba(2,3,4,0.06)');
+    g.addColorStop(0.45, 'rgba(2,3,4,0.16)');
+    g.addColorStop(0.7, 'rgba(2,3,4,0.45)');
+    g.addColorStop(0.88, 'rgba(2,3,4,0.78)');
+    g.addColorStop(1, 'rgba(2,3,4,0.95)');
     feCtx.fillStyle = g;
     feCtx.fillRect(0, 0, W, H);
   };
