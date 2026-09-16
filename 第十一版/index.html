@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>监控室 MONITOR ROOM · B10</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23020304'/%3E%3Crect x='6' y='6' width='4' height='4' fill='%23e0483a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --bg:#07080a; --panel:#101315; --ink:#efefe7; --dim:#a8b8a0; --dark:#7d8078;
+  --line:#23272b; --acc:#c8d6c0; --red:#b8543f;
+  --px:"FusionPixel","Courier New",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--px);
+  font-size:12px; -webkit-font-smoothing:none; font-smooth:never;
+  min-height:100vh; overflow-x:hidden;
+  cursor:none;
+}
+/* ── 胶片颗粒 + 暗角 ─────────────────────────── */
+.grain{
+  position:fixed; inset:-60px; z-index:90; pointer-events:none; opacity:.55;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain-shift .42s steps(3) infinite;
+}
+@keyframes grain-shift{
+  0%{transform:translate(0,0)} 33%{transform:translate(-28px,16px)}
+  66%{transform:translate(20px,-24px)} 100%{transform:translate(0,0)}
+}
+.vignette{
+  position:fixed; inset:0; z-index:89; pointer-events:none;
+  background:radial-gradient(ellipse 75% 65% at 50% 42%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+/* 全局扫描线 */
+.scan-global{
+  position:fixed; inset:0; z-index:88; pointer-events:none; opacity:.28;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+}
+/* 偶发闪烁 */
+.flicker-all{animation:all-flicker 7s steps(1) infinite}
+@keyframes all-flicker{
+  0%,93.9%,95.3%,100%{opacity:1} 94%{opacity:.86} 94.6%{opacity:.97}
+}
+
+/* ── 标题 ─────────────────────────── */
+header{
+  text-align:center; padding:46px 16px 8px; position:relative; z-index:10;
+}
+h1{
+  font-size:clamp(36px,6vw,48px); letter-spacing:.14em; font-weight:800;
+  color:var(--ink);
+  text-shadow:3px 3px 0 #000, 0 0 22px rgba(242,242,234,.28);
+}
+h1 .en{
+  display:block; font-size:12px; color:var(--dim); letter-spacing:.46em; margin-top:10px; font-weight:400;
+}
+.hint{
+  margin-top:14px; font-size:12px; letter-spacing:.32em; color:var(--dark);
+  animation:hint-blink 2.6s steps(1) infinite;
+}
+@keyframes hint-blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── 屏幕阵列 ─────────────────────────── */
+.stage{
+  position:relative; z-index:10;
+  max-width:1560px; margin:26px auto 0; padding:10px 34px 30px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:34px 30px;
+  transform-style:preserve-3d; perspective:1400px;
+}
+@media(max-width:1100px){.stage{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.stage{grid-template-columns:repeat(2,1fr);gap:22px 16px;padding:10px 16px 24px}}
+@media(max-width:420px){.stage{grid-template-columns:1fr}}
+
+/* CRT 整机 */
+.crt{
+  position:relative; cursor:pointer; border:0; background:transparent; padding:0; text-align:left;
+  transform:rotate(var(--tilt,0deg)) translate(var(--tx,0px), var(--ty,0px)) scale(var(--sc,1));
+  animation:float-y var(--fdur,6s) ease-in-out var(--fdel,0s) infinite;
+  transition:transform .35s cubic-bezier(.2,.8,.3,1.2), filter .3s;
+  will-change:transform;
+  filter:brightness(var(--lit,.94));
+}
+.crt:hover{
+  transform:rotate(var(--tilt,0deg)) translate(var(--tx,0px), var(--ty,0px)) scale(calc(var(--sc,1) * 1.04)) translateY(-7px);
+  filter:brightness(1.12);
+  z-index:20;
+}
+@keyframes float-y{
+  0%,100%{margin-top:0} 50%{margin-top:var(--fdrop,-9px)}
+}
+/* 金属 bezel */
+.bezel{
+  background:linear-gradient(160deg,#2b3034 0%,#1a1e21 40%,#101315 100%);
+  border:1px solid #000; border-radius:5px;
+  padding:9px 9px 26px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 -2px 4px rgba(0,0,0,.6),
+    0 10px 26px rgba(0,0,0,.55),
+    0 0 22px rgba(190,210,255,.05);
+  position:relative;
+}
+.bezel::after{ /* 底部指示灯 */
+  content:""; position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  width:5px; height:5px; border-radius:50%;
+  background:#3f5c46; box-shadow:0 0 6px rgba(110,220,140,.5);
+  animation:led 3.2s steps(1) infinite;
+}
+@keyframes led{0%,100%{opacity:1}47%{opacity:1}50%{opacity:.25}53%{opacity:1}}
+/* 显像管屏幕 */
+.screen{
+  position:relative; aspect-ratio:4/3; overflow:hidden; background:#000;
+  border-radius:3px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.07),
+    inset 0 0 34px rgba(0,0,0,.75),
+    0 0 18px rgba(200,220,255,.08);
+}
+.screen img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  filter:saturate(.82) contrast(1.1) brightness(.9);
+}
+.screen::before{ /* 扫描线 */
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.26) 0 1px, transparent 1px 3px);
+}
+.screen::after{ /* 玻璃弧光 */
+  content:""; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:radial-gradient(ellipse 90% 70% at 50% 30%, rgba(255,255,255,.06), transparent 60%);
+}
+.rollband{ /* 缓缓滚动的亮带 */
+  position:absolute; left:0; right:0; height:18%; z-index:3; pointer-events:none;
+  background:linear-gradient(to bottom, transparent, rgba(230,240,255,.05), transparent);
+  animation:rollband 5.5s linear infinite;
+}
+@keyframes rollband{from{top:-20%}to{top:110%}}
+
+/* 屏幕标签 */
+.tag-no{
+  position:absolute; top:7px; left:8px; z-index:6;
+  font-size:12px; letter-spacing:.12em; color:var(--acc);
+  text-shadow:1px 1px 0 #000; display:flex; align-items:center; gap:5px;
+}
+.tag-no i{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(184,84,63,.8);animation:led 1.8s steps(1) infinite}
+.tag-ch{
+  position:absolute; top:7px; right:8px; z-index:6;
+  font-size:12px; letter-spacing:.12em; color:var(--dark); text-shadow:1px 1px 0 #000;
+}
+.tag-cap{
+  position:absolute; bottom:6px; left:8px; z-index:6;
+  font-size:12px; letter-spacing:.1em; color:var(--ink); text-shadow:1px 1px 0 #000,0 0 8px rgba(0,0,0,.9);
+}
+/* 损坏屏幕：雪花噪点 */
+.crt.broken .screen img{display:none}
+.crt.broken .screen{background:#0a0b0c}
+.static-fill{
+  position:absolute; inset:0; z-index:2;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:static-jump .12s steps(2) infinite; opacity:.5;
+}
+@keyframes static-jump{0%{transform:translate(0,0)}50%{transform:translate(-14px,9px)}100%{transform:translate(8px,-7px)}}
+.no-signal{
+  position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center;
+  font-size:12px; letter-spacing:.4em; color:rgba(239,239,231,.75); text-shadow:1px 1px 0 #000;
+  animation:hint-blink 1.6s steps(1) infinite;
+}
+
+footer{
+  position:relative; z-index:10; text-align:center; padding:26px 0 34px;
+  font-size:12px; letter-spacing:.3em; color:#4a4d48;
+}
+
+/* ── 雪花故障闪动（全屏转场） ─────────────────── */
+.glitch-burst{
+  position:fixed; inset:0; z-index:200; background:#050606; overflow:hidden;
+  animation:burst-in .05s steps(1) both;
+}
+.glitch-burst .gnoise{
+  position:absolute; inset:-40px;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.08) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:burst-noise .09s steps(2) infinite;
+}
+@keyframes burst-noise{
+  0%{transform:translate(0,0);filter:contrast(1.4)}
+  25%{transform:translate(-30px,18px);filter:contrast(2) invert(.08)}
+  50%{transform:translate(24px,-26px);filter:contrast(1.1) brightness(1.3)}
+  75%{transform:translate(-14px,-12px);filter:contrast(1.8) invert(.15)}
+  100%{transform:translate(10px,20px);filter:contrast(1.4)}
+}
+.glitch-burst .gband{
+  position:absolute; left:0; right:0; height:22%; top:30%;
+  background:linear-gradient(to bottom, transparent, rgba(242,242,234,.16), transparent);
+  animation:burst-band .12s steps(3) infinite; mix-blend-mode:screen;
+}
+@keyframes burst-band{0%{top:8%}33%{top:52%}66%{top:74%}100%{top:20%}}
+.glitch-burst .gtext{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  color:rgba(242,242,234,.85); font-size:clamp(12px,2vw,24px); letter-spacing:.5em;
+  text-shadow:2px 0 rgba(184,84,63,.8), -2px 0 rgba(120,160,200,.8);
+  animation:burst-text .1s steps(2) infinite;
+}
+@keyframes burst-text{
+  0%,100%{opacity:1;transform:translate(-50%,-50%) skewX(0)}
+  50%{opacity:.55;transform:translate(calc(-50% + 4px),-50%) skewX(-4deg)}
+}
+@keyframes burst-in{from{opacity:0}to{opacity:1}}
+
+/* ── 详情弹窗（CRT 开机进入） ─────────────────── */
+.modal{
+  position:fixed; inset:0; z-index:150; display:none;
+  align-items:center; justify-content:center; padding:22px;
+  background:rgba(3,4,5,.85); backdrop-filter:blur(3px);
+}
+.modal.show{display:flex}
+.mbox{
+  position:relative; width:min(880px,100%); max-height:88vh; overflow-y:auto;
+  background:var(--panel); border:1px solid #000; border-radius:6px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07);
+  animation:none;
+}
+.mbox::-webkit-scrollbar{width:10px}
+.mbox::-webkit-scrollbar-thumb{background:#23272a;border:2px solid #0b0d0f}
+.mtitlebar{
+  position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:#14171a; border-bottom:3px solid #060708;
+}
+.mtitlebar .rec{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.mtitlebar .code{font-size:12px; letter-spacing:.16em; color:var(--dim)}
+.mclose{
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--dim);
+  width:26px; height:26px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+}
+.mclose:hover{color:var(--ink); border-color:var(--dim)}
+.mbody{padding:22px 26px 26px}
+.mscreen{
+  position:relative; max-width:580px; margin:0 auto 24px; background:#000;
+  border:6px solid #1a1e21; border-radius:4px; overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 30px rgba(0,0,0,.7), 0 0 24px rgba(200,220,255,.07);
+}
+.mscreen img{width:100%; height:auto; max-height:400px; object-fit:contain; display:block; background:#000}
+.mscreen::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+}
+.mscreen .mstat{position:absolute; inset:0}
+.mh2{font-size:24px; letter-spacing:.1em; color:var(--ink); margin-bottom:10px; text-shadow:2px 2px 0 #000,0 0 14px rgba(242,242,234,.22)}
+.mmeta{font-size:12px; letter-spacing:.12em; line-height:2; color:var(--dim)}
+.mmeta .sub2{color:var(--dark)}
+.mdivider{height:3px; margin:16px 0; background:repeating-linear-gradient(90deg,#2a2d30 0 8px, transparent 8px 16px)}
+.mdesc{font-size:12px; line-height:2.1; color:#b9bcb4}
+.mend{margin-top:22px; display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.28em; color:#4a4d48}
+
+
+/* ── 拓扑弹窗（右侧独立可关闭，THE COORDINATE 风格） ── */
+.topo{
+  position:fixed; top:0; right:0; bottom:0; z-index:160;
+  width:min(430px,94vw); display:none;
+  background:#0a0d10; border-left:3px solid #23272b;
+  box-shadow:-24px 0 60px rgba(0,0,0,.65);
+  transform:translateX(40px); opacity:0;
+}
+.topo.show{display:block; animation:topo-in .35s steps(6) forwards;}
+@keyframes topo-in{to{transform:none;opacity:1}}
+.topo-head{
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  background:#14171a; border-bottom:3px solid #060708;
+}
+.topo-head .rec{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.topo-head .code{font-size:12px; letter-spacing:.16em; color:var(--dim);}
+.tclose{
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--dim);
+  width:26px; height:26px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+}
+.tclose:hover{color:var(--ink); border-color:var(--dim)}
+.topo-body{
+  position:relative; height:calc(100% - 47px); overflow:hidden;
+  background-image:radial-gradient(rgba(200,214,200,.13) 1px, transparent 1.5px);
+  background-size:14px 14px;
+}
+.topo-cross-v{
+  position:absolute; left:50%; top:0; bottom:0; width:2px; transform:translateX(-50%);
+  background:linear-gradient(to bottom, rgba(255,120,60,0), rgba(255,140,70,.85) 30%, rgba(255,180,95,1) 50%, rgba(255,140,70,.85) 70%, rgba(255,120,60,0));
+  box-shadow:0 0 16px rgba(255,140,70,.5);
+}
+.topo-cross-h{
+  position:absolute; top:50%; left:0; right:0; height:2px; transform:translateY(-50%);
+  background:linear-gradient(to right, rgba(255,120,60,0), rgba(255,150,80,.75) 30%, rgba(255,180,95,.95) 50%, rgba(255,150,80,.75) 70%, rgba(255,120,60,0));
+  box-shadow:0 0 13px rgba(255,140,70,.45);
+}
+.topo-glow{
+  position:absolute; left:50%; top:50%; width:110px; height:110px; transform:translate(-50%,-50%);
+  border-radius:50%; background:radial-gradient(circle, rgba(255,160,80,.32), transparent 70%);
+  pointer-events:none;
+}
+.tick{position:absolute; transform:translate(-50%,-50%); font-size:12px; color:#545b52; letter-spacing:.08em; pointer-events:none;}
+.tnode{
+  position:absolute; width:5px; height:5px; background:#9fb39f;
+  transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(160,200,160,.35);
+}
+.tnode.active{
+  width:9px; height:9px; background:var(--ink);
+  box-shadow:0 0 0 3px rgba(239,239,231,.14), 9px 0 0 -1px #efefe7, -9px 0 0 -1px #efefe7,
+             0 9px 0 -1px #efefe7, 0 -9px 0 -1px #efefe7, 0 0 22px rgba(242,242,234,.9);
+  animation:node-pulse 1.4s steps(2) infinite;
+}
+@keyframes node-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.55)}}
+.tlabel{
+  position:absolute; transform:translate(-50%,0);
+  font-size:12px; color:var(--ink); text-shadow:1px 1px 0 #000;
+  white-space:nowrap; text-align:center; pointer-events:none; line-height:1.9;
+}
+.tlabel .coord{color:var(--dark); letter-spacing:.1em;}
+.tline{
+  position:absolute; height:1px; transform-origin:left center;
+  background:repeating-linear-gradient(90deg, rgba(239,239,231,.5) 0 5px, transparent 5px 9px);
+  pointer-events:none;
+}
+.mtopo{
+  background:none; border:1px solid #2a2d30; color:var(--acc);
+  padding:4px 10px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+  letter-spacing:.14em;
+}
+.mtopo:hover{border-color:var(--acc); background:rgba(200,214,192,.08);}
+
+/* 拓扑打开时左弹窗左移，双窗口互不遮挡 */
+#mbox{transition:margin .45s cubic-bezier(.2,.7,.3,1)}
+body.topo-on #mbox{margin-right:min(430px,94vw)}
+
+/* ── PANOPTIC 四象限图 ─────────────────────────── */
+#quad{
+  display:none; position:fixed; inset:0; z-index:60;
+  background:#07090b;
+}
+body.view-quad #quad{display:block}
+body.view-quad header, body.view-quad .stage, body.view-quad footer{display:none}
+.quad-head{
+  position:relative; z-index:5; display:flex; align-items:center; gap:10px;
+  padding:14px 20px; font-size:13px; letter-spacing:.22em; color:var(--dim);
+  border-bottom:1px solid #16191c; background:rgba(7,9,11,.9);
+}
+.quad-head .rdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.quad-head .qtitle{color:var(--ink); letter-spacing:.3em}
+.qmenu{
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--acc);
+  padding:5px 12px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
+  letter-spacing:.14em;
+}
+.qmenu:hover{border-color:var(--acc); background:rgba(200,214,192,.08);}
+.quad-stage{
+  position:absolute; inset:57px 0 0 0; overflow:hidden;
+  background:radial-gradient(130% 100% at 50% 30%, #0e1216 0%, #07090b 55%, #030405 100%);
+}
+.qaxis-x{display:none}
+.qaxis-y{display:none}
+.qlab{position:absolute; z-index:3; font-size:13px; letter-spacing:.3em; color:#8a8f88; text-shadow:1px 1px 0 #000; white-space:nowrap;}
+.qlab-l{left:5%; bottom:11%;}
+.qlab-r{right:5%; bottom:11%;}
+.qlab-t{top:calc(32% - 36px); left:50%; transform:translateX(-50%); font-size:12px; color:#6a6f68;}
+.qlab-b{bottom:3%; left:50%; transform:translateX(-50%);}
+.qtag{position:absolute; z-index:3; font-size:11px; letter-spacing:.18em; color:#4a4f49; text-shadow:1px 1px 0 #000;}
+.qtag-tl{top:30%; left:14%;}
+.qtag-tr{top:30%; right:14%;}
+.qtag-bl{bottom:7%; left:8%;}
+.qtag-br{bottom:7%; right:8%;}
+/* 像素场画布：黑白灰常态点阵，光标热度放大+变红 */
+#quadCanvas{position:absolute; inset:0; z-index:2; display:block; cursor:none;}
+/* 停留约1s展开的档案卡片：像素级放大动画，可点击查看详情 */
+.qcard{
+  position:absolute; z-index:4; width:160px; pointer-events:none;
+  background:#0c0f12; border:2px solid #3a3d40;
+  box-shadow:0 0 28px rgba(0,0,0,.85), 0 0 16px rgba(224,72,58,.16);
+  transform:scale(0); opacity:0; transform-origin:center center;
+  transition:transform .3s steps(7), opacity .22s steps(4);
+}
+.qcard.on{transform:scale(1); opacity:1; pointer-events:auto; cursor:pointer;}
+.qcard.on:hover{border-color:#e0483a;}
+.qcard img{display:block; width:100%; height:104px; object-fit:cover; image-rendering:pixelated; background:#000;}
+.qcard .qc-title{padding:6px 8px; font-size:11px; letter-spacing:.1em; color:var(--ink); border-top:1px solid #1c2024; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.qcard .qc-no{color:#e0483a; margin-right:6px;}
+.qcard .qc-hint{padding:3px 8px 6px; font-size:9px; letter-spacing:.18em; color:#5a5f58;}
+
+/* 卡片界面 MENU 主菜单键 */
+.menu-btn{
+  position:fixed; right:22px; bottom:22px; z-index:120;
+  background:rgba(10,13,16,.88); border:1px solid #2a2d30; color:var(--acc);
+  padding:8px 16px; cursor:pointer; font-size:13px; border-radius:4px; font-family:inherit;
+  letter-spacing:.18em; box-shadow:0 0 18px rgba(0,0,0,.6);
+}
+.menu-btn:hover{border-color:var(--acc); background:rgba(200,214,192,.1);}
+body.locked .menu-btn, body.view-quad .menu-btn{display:none;}
+
+/* CRT 开机序列 */
+.boot-line{
+  position:absolute; left:0; right:0; top:50%; height:3px; z-index:30;
+  background:#f4f4ec;
+  box-shadow:0 0 18px 4px rgba(244,244,236,.9), 0 0 60px 14px rgba(190,220,255,.35);
+  transform:translateY(-50%) scaleY(1);
+  animation:boot-line .5s cubic-bezier(.2,.7,.3,1) .05s both; pointer-events:none;
+}
+@keyframes boot-line{
+  0%{transform:translateY(-50%) scaleY(1);opacity:0}
+  8%{transform:translateY(-50%) scaleY(1);opacity:1}
+  45%{transform:translateY(-50%) scaleY(90);opacity:1}
+  70%{transform:translateY(-50%) scaleY(260);opacity:.9}
+  100%{transform:translateY(-50%) scaleY(420);opacity:0}
+}
+.boot-static{
+  position:absolute; inset:0; z-index:29;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.09) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:boot-fade .95s steps(1) .1s both; pointer-events:none;
+}
+@keyframes boot-fade{
+  0%{opacity:1}12%{opacity:.4}18%{opacity:1}30%{opacity:.65}36%{opacity:1}
+  52%{opacity:.75}58%{opacity:.95}74%{opacity:.25}82%{opacity:.7}100%{opacity:0;visibility:hidden}
+}
+.boot-content{animation:crt-content-in .85s steps(1) .22s both}
+@keyframes crt-content-in{
+  0%{opacity:0;transform:scaleY(1.06);filter:brightness(2.2) contrast(1.6)}
+  18%{opacity:1;transform:scaleY(.985);filter:brightness(1.6) contrast(1.3)}
+  30%{opacity:.35}38%{opacity:1;filter:brightness(1.15)}
+  52%{opacity:.6;transform:scaleY(1.01)}60%{opacity:1;filter:none}
+  78%{opacity:.85}100%{opacity:1;transform:none;filter:none}
+}
+/* CRT 关机序列 */
+.off-veil{
+  position:absolute; inset:0; z-index:40; pointer-events:none; opacity:0; background:#050606;
+}
+.off-line{
+  position:absolute; left:0; right:0; top:50%; height:3px; z-index:41; opacity:0;
+  background:#f4f4ec;
+  box-shadow:0 0 18px 4px rgba(244,244,236,.9), 0 0 60px 14px rgba(190,220,255,.35);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.crt-off .boot-content{animation:crt-off-collapse .38s cubic-bezier(.5,0,.8,.4) both}
+@keyframes crt-off-collapse{
+  0%{transform:scaleY(1);filter:brightness(1)}
+  30%{transform:scaleY(1);filter:brightness(2.4) contrast(1.5)}
+  70%{transform:scaleY(.012);filter:brightness(3.2)}
+  100%{transform:scaleY(.004);filter:brightness(4);opacity:0}
+}
+.crt-off .off-veil{animation:off-veil .55s steps(2) both}
+@keyframes off-veil{
+  0%{opacity:0}20%{opacity:1}55%{opacity:.85}100%{opacity:1}
+}
+.crt-off .off-line{animation:off-line .55s ease-out both}
+@keyframes off-line{
+  0%,55%{opacity:0;transform:translateY(-50%) scaleY(1)}
+  62%{opacity:1;transform:translateY(-50%) scaleY(1)}
+  85%{opacity:1;transform:translateY(-50%) scaleY(.4)}
+  100%{opacity:0;transform:translateY(-50%) scaleY(.1)}
+}
+
+@media(max-width:600px){.mbody{padding:16px}}
+
+/* ── 入场界面：鱼眼监控镜头 ─────────────────────────── */
+.entry{
+  position:fixed; inset:0; z-index:300; background:#020304;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.lens{
+  position:relative; width:min(94vmin,940px); aspect-ratio:1; border-radius:50%;
+  overflow:hidden; background:
+    radial-gradient(circle at 50% 46%, #101315 0%, #0a0c0d 46%, #050708 72%, #010202 100%);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.05),
+    inset 0 0 18vmin rgba(0,0,0,.55),
+    inset 0 0 6vmin rgba(0,0,0,.6),
+    inset 0 0 2vmin rgba(255,255,255,.03),
+    0 0 10vmin rgba(0,0,0,.9);
+}
+/* ── 网页左上角 OSD 实时监控时钟（参考监控实拍：衬线白字 + 粗黑描边 + 横向拉伸） ── */
+.osd-clock{
+  position:fixed; top:10px; left:14px; z-index:9500;
+  font-family:SimSun,"NSimSun","Songti SC",serif;
+  font-size:clamp(13px,1.8vmin,19px); font-weight:700;
+  color:#f4f4ee; letter-spacing:.04em; white-space:nowrap;
+  text-shadow:-2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000,
+              -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
+              0 0 7px rgba(0,0,0,.85);
+  transform:scaleX(1.07); transform-origin:left center;
+  opacity:.94; pointer-events:none;
+  image-rendering:auto;
+}
+/* 象限图顶栏为 OSD 时钟让位 */
+body.view-quad .quad-head{padding-left:clamp(220px, 25vw, 330px)}
+#fisheyeCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:0}
+#lensCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:1}
+.lens-hud{
+  position:absolute; top:15.5%; left:16%; z-index:5;
+  display:flex; flex-direction:column; gap:7px;
+  font-size:clamp(10px,1.5vmin,14px); letter-spacing:.18em; color:#d8dcd6;
+  text-shadow:1px 1px 0 rgba(0,0,0,.9);
+}
+.lens-clock{display:flex; align-items:center; gap:10px}
+.lens-clock .rec{width:8px;height:8px;border-radius:50%;background:#e0483a;box-shadow:0 0 8px rgba(224,72,58,.9);animation:led 1.1s steps(1) infinite}
+.lens-cam{font-size:clamp(8px,1.15vmin,10px); color:#7d8078; letter-spacing:.26em}
+.lens-title{position:absolute; top:37%; left:0; right:0; height:23%; z-index:4}
+#titleCanvas{width:100%; height:100%; display:block}
+.lens-sub{
+  position:absolute; top:64%; left:0; right:0; z-index:4; text-align:center;
+  font-size:clamp(10px,1.6vmin,14px); letter-spacing:.6em; color:#8a8d88;
+  text-shadow:1px 1px 0 rgba(0,0,0,.9);
+}
+.lens-menu{
+  position:absolute; right:12%; top:22%; z-index:6;
+  display:flex; flex-direction:column; gap:20px;
+  opacity:0; transform:translateX(26px); pointer-events:none;
+  transition:opacity .25s steps(5), transform .25s steps(5);
+}
+.lens-menu.on{opacity:1; transform:none; pointer-events:auto}
+.lmi{
+  font-size:clamp(13px,2vmin,17px); letter-spacing:.24em; color:#a6aaa3;
+  border:1px solid rgba(255,255,255,.08); padding:12px 20px;
+  background:rgba(0,0,0,.25);
+  transition:transform .12s steps(4), color .12s steps(4),
+             border-color .12s steps(4), background .12s steps(4);
+}
+.lmi.hot{
+  transform:scale(1.15); color:#fff; border-color:rgba(224,72,58,.75);
+  background:rgba(224,72,58,.10); transform-origin:left center;
+}
+.lens-hint{
+  position:absolute; bottom:11%; left:0; right:0; z-index:5; text-align:center;
+  font-size:clamp(10px,1.5vmin,13px); letter-spacing:.34em; color:#8a8d88;
+  animation:lens-hint-blink 1.6s steps(2) infinite;
+  text-shadow:1px 1px 0 rgba(0,0,0,.9);
+}
+@keyframes lens-hint-blink{0%,60%{opacity:1}61%,100%{opacity:.25}}
+/* 入场退出：雪花噪点过渡 */
+.entry.exiting{animation:entry-exit-snow .85s steps(6) both}
+@keyframes entry-exit-snow{
+  0%{opacity:1; filter:none}
+  25%{opacity:.85; filter:brightness(1.6) contrast(1.4)}
+  45%{opacity:.6}
+  60%{opacity:.9; filter:brightness(2)}
+  100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
+}
+#snowCanvas{
+  position:fixed; inset:0; z-index:400; display:none;
+  width:100vw; height:100vh;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+body.locked{overflow:hidden}
+
+/* ── 红点监控闪烁光标（监控头瞄准） ─────────────────────────── */
+html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{cursor:none}
+#eyeLayer{
+  position:fixed; inset:0; z-index:9999;
+  pointer-events:none;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+</style>
+</head>
+<body class="flicker-all">
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="scan-global"></div>
+<div class="osd-clock" id="clock">----年--月--日 星期- --:--:--</div>
+
+<!-- 入场界面：鱼眼监控镜头 -->
+<div class="entry" id="entry" role="button" aria-label="进入监控室档案">
+  <div class="lens" id="lens">
+    <canvas id="fisheyeCanvas" aria-hidden></canvas>
+    <canvas id="lensCanvas" aria-hidden></canvas>
+    <div class="lens-hud">
+      <div class="lens-cam">CAM-88&nbsp;&nbsp;·&nbsp;&nbsp;FISHEYE&nbsp;&nbsp;·&nbsp;&nbsp;SIGNAL LIVE</div>
+    </div>
+    <div class="lens-title"><canvas id="titleCanvas"></canvas></div>
+    <div class="lens-sub">SURVEILLANCE&nbsp;&nbsp;&nbsp;ARCHIVE</div>
+    <nav class="lens-menu" id="lensMenu" aria-label="入场菜单">
+      <div class="lmi hot" data-mode="cruise">&gt;&gt;&nbsp; CRUISE自动轮巡</div>
+      <div class="lmi" data-mode="panoptic">&nbsp;&nbsp;&nbsp;&nbsp; PANOPTIC全景</div>
+    </nav>
+    <div class="lens-hint" id="lensHint">点击任意处激活 · CLICK ANYWHERE</div>
+  </div>
+</div>
+<canvas id="snowCanvas" aria-hidden></canvas>
+
+<header>
+  <h1>监控室<span class="en">MONITOR ROOM · B10</span></h1>
+  <div class="hint">◄ CLICK A SCREEN — 点击屏幕查看档案 ►</div>
+</header>
+
+<main class="stage" id="stage"></main>
+
+<button type="button" class="menu-btn" id="menuBtn">&#9776; MENU &#183; 主菜单</button>
+
+<!-- PANOPTIC 全景象限图 -->
+<section id="quad" aria-label="全景象限图">
+  <div class="quad-head">
+    <span class="rdot"></span>
+    <span>CAM-88</span>
+    <span class="qtitle">PANOPTIC MATRIX &#183; 全景坐标</span>
+    <button type="button" class="qmenu" id="qmenu">&#9776; MENU &#183; 主菜单</button>
+  </div>
+  <div class="quad-stage" id="quadStage">
+    <div class="qaxis-x"></div><div class="qaxis-y"></div>
+    <span class="qlab qlab-l">&#9664; 现实实体空间</span>
+    <span class="qlab qlab-r">虚拟叙事空间 &#9654;</span>
+    <span class="qlab qlab-t">&#9650; 艺术思辨意象</span>
+    <span class="qlab qlab-b">&#9660; 客观纪实素材</span>
+    <span class="qtag qtag-tl">Q&#8553; 现实实体 &#215; 艺术思辨</span>
+    <span class="qtag qtag-tr">Q&#8554; 虚拟叙事 &#215; 艺术思辨</span>
+    <span class="qtag qtag-bl">Q&#8552; 现实实体 &#215; 客观纪实</span>
+    <span class="qtag qtag-br">Q&#8555; 虚拟叙事 &#215; 客观纪实</span>
+    <canvas id="quadCanvas" aria-label="象限像素点阵：光标经过放大像素点，停留一秒展开卡片，点击查看详情"></canvas>
+    <div class="qcard" id="qcard" role="button" tabindex="-1" aria-label="查看档案详情">
+      <img alt=""><div class="qc-title"></div><div class="qc-hint">CLICK · 查看详情</div>
+    </div>
+  </div>
+</section>
+
+<canvas id="eyeLayer" aria-hidden></canvas>
+
+<footer>YOU ARE BEING WATCHED — AND YOU ARE WATCHING</footer>
+
+<!-- 雪花故障闪动（全屏转场） -->
+<div class="glitch-burst" id="burst" style="display:none" aria-hidden>
+  <div class="gnoise"></div>
+  <div class="gband"></div>
+  <div class="gtext">SIGNAL INTERRUPTED</div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="mbox" id="mbox">
+    <div class="boot-static" aria-hidden></div>
+    <div class="boot-line" aria-hidden></div>
+    <div class="off-veil" aria-hidden></div>
+    <div class="off-line" aria-hidden></div>
+    <div class="boot-content">
+      <div class="mtitlebar">
+        <span class="rec"></span>
+        <span class="code" id="mcode"></span>
+        <button type="button" class="mtopo">&#x2316; TOPO</button>
+        <button type="button" class="mclose" id="mclose" aria-label="关闭">&#10005;</button>
+      </div>
+      <div class="mbody">
+        <div class="mscreen" id="mscreen"></div>
+        <h2 class="mh2" id="mtitle"></h2>
+        <div class="mmeta" id="mmeta"></div>
+        <div class="mdivider"></div>
+        <p class="mdesc" id="mdesc"></p>
+        <div class="mend"><span class="rec" style="width:7px;height:7px;border-radius:50%;background:#b8543f"></span>END OF FILE — 点击查看其他屏幕</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 拓扑弹窗（右侧独立，可单独关闭） -->
+<aside class="topo" id="topo" role="dialog" aria-label="分类拓扑">
+  <div class="topo-head">
+    <span class="rec"></span>
+    <span class="code" id="tcode">THE COORDINATE</span>
+    <button type="button" class="tclose" id="tclose" aria-label="关闭拓扑">&#10005;</button>
+  </div>
+  <div class="topo-body" id="tbody"></div>
+</aside>
+
+<script src="data.js"></script>
+<script>
+/* ── 入场界面：鱼眼镜头 + 实时时钟 + 雪花屏激活 + 菜单跳转 ─────────────────────────── */
+(function(){
+  const entry = document.getElementById('entry');
+  const lens = document.getElementById('lens');
+  const menu = document.getElementById('lensMenu');
+  const hint = document.getElementById('lensHint');
+  document.body.classList.add('locked');
+
+  /* 网页左上角 OSD 实时时间（参考监控 OSD：年月日 星期 时分秒） */
+  const clockEl = document.getElementById('clock');
+  const WD = ['日','一','二','三','四','五','六'];
+  const p2 = n => String(n).padStart(2, '0');
+  const tick = () => {
+    const d = new Date();
+    clockEl.textContent = d.getFullYear() + '年' + p2(d.getMonth() + 1) + '月' + p2(d.getDate()) + '日' +
+      ' 星期' + WD[d.getDay()] + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+  };
+  tick(); setInterval(tick, 250);
+
+  /* 镜头球面经纬线（同心弧 + 弯曲经纬，营造鱼眼纵深） */
+  const lc = document.getElementById('lensCanvas');
+  const lctx = lc.getContext('2d');
+  let LW = 0, LH = 0;
+  const lensSize = () => {
+    const r = lens.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    LW = r.width; LH = r.height;
+    lc.width = Math.round(LW * dpr); lc.height = Math.round(LH * dpr);
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  lensSize(); addEventListener('resize', lensSize);
+  const dust = [];
+  for(let i = 0; i < 42; i++) dust.push({ a: Math.random() * Math.PI * 2, r: 0.12 + Math.random() * 0.38, s: 0.0004 + Math.random() * 0.0012, sz: Math.random() < 0.22 ? 2 : 1 });
+  (function lensLoop(){
+    lctx.clearRect(0, 0, LW, LH);
+    const cx = LW / 2, cy = LH * 0.52, R = Math.min(LW, LH) / 2;
+    lctx.lineWidth = 1;
+    /* 同心椭圆弧（纬线） */
+    const lats = [0.28, 0.52, 0.74, 0.9];
+    lats.forEach((f, i) => {
+      lctx.strokeStyle = 'rgba(255,255,255,' + (0.085 - i * 0.012) + ')';
+      lctx.beginPath();
+      lctx.ellipse(cx, cy, R * f, R * f * (0.42 + f * 0.32), 0, 0, Math.PI * 2);
+      lctx.stroke();
+    });
+    /* 弯曲经线（二次曲线收向上下极点，纵深感） */
+    for(let i = -3; i <= 3; i++){
+      const bx = cx + i * R * 0.26;
+      lctx.strokeStyle = 'rgba(255,255,255,' + (i === 0 ? 0.11 : 0.07) + ')';
+      lctx.beginPath();
+      lctx.moveTo(bx, cy - R * 0.96);
+      lctx.quadraticCurveTo(cx + i * R * 0.10, cy, bx, cy + R * 0.96);
+      lctx.stroke();
+    }
+    /* 轨道尘埃 */
+    const t = performance.now();
+    for(const p of dust){
+      p.a += p.s;
+      const x = cx + Math.cos(p.a) * R * p.r * 1.9;
+      const y = cy + Math.sin(p.a) * R * p.r * 0.62;
+      const tw = Math.floor(t / 480 + p.a * 7) % 3;
+      lctx.fillStyle = 'rgba(255,255,255,' + (tw === 0 ? 0.22 : 0.08) + ')';
+      lctx.fillRect(Math.round(x), Math.round(y), p.sz, p.sz);
+    }
+    requestAnimationFrame(lensLoop);
+  })();
+
+  /* 鱼眼畸变标题：离屏绘制「监控室」→ 按竖条采样做桶形隆起 */
+  const tc = document.getElementById('titleCanvas');
+  const tctx = tc.getContext('2d');
+  const off = document.createElement('canvas');
+  const octx = off.getContext('2d');
+  const drawTitle = () => {
+    const r = tc.getBoundingClientRect();
+    if(r.width < 10) return;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    tc.width = Math.round(r.width * dpr); tc.height = Math.round(r.height * dpr);
+    tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    off.width = tc.width; off.height = tc.height;
+    const fs = Math.round(r.height * 0.52);
+    octx.setTransform(1, 0, 0, 1, 0, 0);
+    octx.clearRect(0, 0, off.width, off.height);
+    octx.font = '800 ' + fs + 'px "Fusion Pixel", monospace';
+    octx.textAlign = 'center'; octx.textBaseline = 'middle';
+    const tx = off.width / 2, ty = off.height / 2 + fs * 0.04;
+    octx.fillStyle = 'rgba(224,72,58,.55)';            /* 红色重影（监控色散） */
+    octx.fillText('监控室', tx - fs * 0.045, ty);
+    octx.fillText('监控室', tx + fs * 0.045, ty);
+    octx.fillStyle = '#f2f2ea';                        /* 主字 + 像素投影 */
+    octx.shadowColor = 'rgba(0,0,0,.9)'; octx.shadowOffsetX = 3; octx.shadowOffsetY = 3;
+    octx.fillText('监控室', tx, ty);
+    octx.shadowColor = 'transparent';
+    /* 桶形畸变：每 2px 竖条按离镜头中心距离隆起（中间高、边缘压扁） */
+    tctx.clearRect(0, 0, r.width, r.height);
+    const step = 2 * dpr;
+    for(let x = 0; x < off.width; x += step){
+      const n = (x + step / 2) / off.width * 2 - 1;    /* -1..1 */
+      const k = 1 + 0.72 * (1 - n * n);                /* 中心放大 1.72x，边缘收缩 */
+      const sh = off.height * k;
+      tctx.drawImage(off, x, 0, step, off.height, x / dpr, (r.height - sh / dpr) / 2, step / dpr, sh / dpr);
+    }
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawTitle);
+  addEventListener('resize', drawTitle);
+
+  /* ── 入场遮罩背景：随机档案图 + 模糊 + Canvas 实时鱼眼球面畸变 ───────────────────────────
+     畸变强度可调：URL 参数 ?fisheye=0~1（默认 0.35）；每次刷新随机选图 */
+  const FISHEYE_STRENGTH = (() => {
+    const v = parseFloat(new URLSearchParams(location.search).get('fisheye'));
+    return (isFinite(v) && v >= 0 && v <= 1) ? v : 0.35;
+  })();
+  window.__fisheye = FISHEYE_STRENGTH;
+
+  const feC = document.getElementById('fisheyeCanvas');
+  const feCtx = feC.getContext('2d');
+  let feImg = null, feNo = 0;
+  window.__entryImg = () => feNo;
+
+  const imgPath = n => 'img/img-' + String(n).padStart(2, '0') + '.jpg';
+  /* 可选图池：与主站一致，剔除 broken / noImage 档案（如 img-32） */
+  const FE_POOL = (window.ITEMS || []).filter(it => !it.broken && !it.noImage).map(it => it.no);
+  const pickNo = () => FE_POOL.length ? FE_POOL[Math.floor(Math.random() * FE_POOL.length)]
+                                      : 1 + Math.floor(Math.random() * 50);
+
+  /* 预加载其余各图到浏览器缓存（空闲时），下次刷新随机图即取即得 */
+  const preloadRest = () => {
+    for(const n of FE_POOL){
+      if(n !== feNo){ const im = new Image(); im.src = imgPath(n); }
+    }
+  };
+
+  const renderFisheye = () => {
+    const r = lens.getBoundingClientRect();
+    if(r.width < 10) return;
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);   /* 逐像素重采样，限制分辨率保性能 */
+    const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    feC.width = W; feC.height = H;
+    if(!feImg || !feImg.naturalWidth) return;
+    /* 1) 双源缓冲：轻度模糊（中心）+ 重度模糊（边缘），cover 填充（原图不做任何修改，仅实时变换） */
+    const iw = feImg.naturalWidth, ih = feImg.naturalHeight;
+    const sc2 = Math.max(W / iw, H / ih);
+    const dw = iw * sc2, dh = ih * sc2;
+    const dx0 = (W - dw) / 2, dy0 = (H - dh) / 2;
+    const mkSrc = blurPx => {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d');
+      if(typeof x.filter === 'string'){
+        x.filter = 'blur(' + Math.round(blurPx * dpr) + 'px)';
+        x.drawImage(feImg, dx0, dy0, dw, dh);
+        x.filter = 'none';
+      }else{  /* 旧内核回退：缩至极小再放大 = 双线性模糊 */
+        const sh = blurPx > 8 ? 3 : 5;   /* 模糊越大缩得越小 */
+        const t = document.createElement('canvas');
+        t.width = Math.max(2, W >> sh); t.height = Math.max(2, H >> sh);
+        t.getContext('2d').drawImage(feImg, 0, 0, t.width, t.height);
+        x.drawImage(t, 0, 0, t.width, t.height, dx0, dy0, dw, dh);
+      }
+      return x.getImageData(0, 0, W, H).data;
+    };
+    const sdSharp = mkSrc(3), sdBlur = mkSrc(16);
+    /* 2) 鱼眼球面畸变（逆映射逐像素采样）：中心轻微放大、边缘向外膨胀拉伸、弧形弯曲；
+          越靠边缘越混入重度模糊 → 边缘更模糊 */
+    const out = feCtx.createImageData(W, H);
+    const od = out.data;
+    const cx = W / 2, cy = H / 2, hx = W / 2, hy = H / 2, S = FISHEYE_STRENGTH;
+    for(let y = 0; y < H; y++){
+      const dy = (y - cy) / hy;
+      for(let x = 0; x < W; x++){
+        const dx = (x - cx) / hx;
+        const r2 = dx * dx + dy * dy;
+        const f = 1 - S * r2;                       /* barrel：越靠边缘采样点越向中心收 → 边缘膨胀 */
+        let sx = (cx + dx * f * hx) | 0, sy = (cy + dy * f * hy) | 0;
+        if(sx < 0) sx = 0; else if(sx >= W) sx = W - 1;
+        if(sy < 0) sy = 0; else if(sy >= H) sy = H - 1;
+        const si = (sy * W + sx) * 4, oi = (y * W + x) * 4;
+        const b = r2 * 0.65 > 1 ? 1 : r2 * 0.65;    /* 边缘模糊权重：中心 0 → 角部 1 */
+        od[oi]     = sdSharp[si]     * (1 - b) + sdBlur[si]     * b;
+        od[oi + 1] = sdSharp[si + 1] * (1 - b) + sdBlur[si + 1] * b;
+        od[oi + 2] = sdSharp[si + 2] * (1 - b) + sdBlur[si + 2] * b;
+        od[oi + 3] = 255;
+      }
+    }
+    feCtx.putImageData(out, 0, 0);
+    /* 3) 镜头暗角：越到边缘越暗（保证文字可读） */
+    const g = feCtx.createRadialGradient(cx, cy, H * 0.12, cx, cy, H * 0.52);
+    g.addColorStop(0, 'rgba(2,3,4,0.06)');
+    g.addColorStop(0.45, 'rgba(2,3,4,0.16)');
+    g.addColorStop(0.7, 'rgba(2,3,4,0.45)');
+    g.addColorStop(0.88, 'rgba(2,3,4,0.78)');
+    g.addColorStop(1, 'rgba(2,3,4,0.95)');
+    feCtx.fillStyle = g;
+    feCtx.fillRect(0, 0, W, H);
+  };
+
+  /* 每次刷新随机抽一张；图片加载完成后渲染，空闲时预载其余；加载失败自动换图 */
+  let feTries = 0;
+  const loadFe = () => {
+    feNo = pickNo();
+    const im = new Image();
+    im.onload = () => { feImg = im; renderFisheye(); };
+    im.onerror = () => { if(++feTries < 10) loadFe(); };
+    im.src = imgPath(feNo);
+  };
+  loadFe();
+  if(window.requestIdleCallback) requestIdleCallback(() => preloadRest(), { timeout: 3000 });
+  else setTimeout(preloadRest, 1500);
+  let feTimer = 0;
+  addEventListener('resize', () => { clearTimeout(feTimer); feTimer = setTimeout(renderFisheye, 200); });
+
+  /* 全屏 CRT 雪花噪点故障屏：随机黑白彩噪颗粒 + 扫描横线 + 色偏分离 + 行撕裂 */
+  const sc = document.getElementById('snowCanvas');
+  const sctx = sc.getContext('2d');
+  sctx.imageSmoothingEnabled = false;
+  const snowBurst = (dur, done) => {
+    const DUR = dur || 780;
+    sc.width = Math.ceil(innerWidth / 3); sc.height = Math.ceil(innerHeight / 3);
+    sc.style.display = 'block';
+    const t0 = performance.now();
+    const step = () => {
+      const w = sc.width, h = sc.height;
+      const img = sctx.createImageData(w, h);
+      const d = img.data;
+      const bandY = ((performance.now() * 0.35) | 0) % h;   /* 滚动亮带 */
+      const tearY = (Math.random() * h) | 0, tearD = ((Math.random() * 30) | 0) - 15; /* 撕裂行偏移 */
+      for(let y = 0; y < h; y++){
+        const scan = (y % 3 === 0) ? 0.5 : 1;               /* 扫描暗线 */
+        const band = Math.abs(y - bandY) < 5 ? 1.6 : 1;
+        const tear = Math.abs(y - tearY) < 8 ? tearD : 0;
+        for(let x = 0; x < w; x++){
+          const i = (y * w + x) * 4;
+          const v = Math.random();
+          let r, g2, b;
+          if(v < 0.014){                                      /* 彩色噪点 */
+            r = 60 + Math.random() * 195; g2 = Math.random() * 150; b = 60 + Math.random() * 195;
+          }else{                                              /* 黑白噪 */
+            g2 = Math.random() < 0.5 ? 225 + Math.random() * 30 : Math.random() * 85;
+            r = g2; b = g2;
+          }
+          if(Math.random() < 0.035){                          /* 色偏分离：随机通道错位脉冲 */
+            const dv = 40 + Math.random() * 70;
+            if(Math.random() < 0.5) r = Math.min(255, r + dv); else b = Math.min(255, b + dv);
+            if(tear) g2 = Math.min(255, g2 + dv * 0.5);
+          }
+          const m = scan * band;
+          d[i] = r * m; d[i + 1] = g2 * m; d[i + 2] = b * m; d[i + 3] = 255;
+        }
+      }
+      sctx.putImageData(img, 0, 0);
+      if(performance.now() - t0 < DUR) requestAnimationFrame(step);
+      else { sc.style.display = 'none'; done && done(); }
+    };
+    requestAnimationFrame(step);
+  };
+
+  /* 激活与菜单选择 */
+  let activated = false, entered = false;
+  const lmis = Array.from(menu.querySelectorAll('.lmi'));
+  let sel = 0;
+  const setSel = i => {
+    sel = i;
+    lmis.forEach((el, k) => el.classList.toggle('hot', k === sel));
+  };
+  const showView = mode => document.body.classList.toggle('view-quad', mode === 'panoptic');
+  const enter = mode => {
+    if(entered) return;
+    entered = true;
+    playPowerOn();
+    snowBurst(860);                 /* CRT 雪花故障屏覆盖整个跳转过程 */
+    entry.classList.add('exiting');
+    setTimeout(() => {
+      entry.style.display = 'none';
+      sc.style.display = 'none';
+      document.body.classList.remove('locked');
+      showView(mode);
+    }, 860);
+  };
+  /* 点击任意处：先雪花屏爆发，再浮现右侧选项 */
+  entry.addEventListener('click', () => {
+    if(entered) return;
+    if(!activated){
+      activated = true;
+      hint.style.display = 'none';
+      snowBurst(780, () => menu.classList.add('on'));
+      return;
+    }
+  });
+  lmis.forEach((el, i) => {
+    el.addEventListener('mouseenter', () => setSel(i));
+    el.addEventListener('click', e => { e.stopPropagation(); setSel(i); enter(el.dataset.mode); });
+  });
+  document.addEventListener('keydown', e => {
+    if(entered || !activated) return;
+    if(e.key === 'ArrowUp'){ e.preventDefault(); setSel((sel + lmis.length - 1) % lmis.length); }
+    if(e.key === 'ArrowDown'){ e.preventDefault(); setSel((sel + 1) % lmis.length); }
+    if(e.key === 'Enter'){ e.preventDefault(); enter(lmis[sel].dataset.mode); }
+  });
+  /* 初始态（未激活时）回车/空格也可激活 */
+  document.addEventListener('keydown', e => {
+    if(entered || activated) return;
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); entry.click(); }
+  });
+
+  /* 返回入场主菜单（卡片界面 / 象限图界面通用）：重置为初始镜头态 */
+  window.backToEntry = () => {
+    if(!entered) return;
+    try{ playPowerOff(); }catch(err){}
+    document.body.classList.remove('view-quad');
+    document.body.classList.add('locked');
+    entry.classList.remove('exiting');
+    entry.style.display = '';
+    entered = false; activated = false;
+    menu.classList.remove('on');
+    hint.style.display = '';
+    setSel(0);
+    lensSize(); drawTitle();
+    window.scrollTo(0, 0);
+  };
+})();
+
+/* ── 渲染屏幕阵列 ─────────────────────────── */
+const stage = document.getElementById('stage');
+const pad = n => String(n).padStart(3,'0');
+const items = window.ITEMS.slice().sort((a,b)=>a.no-b.no);
+
+/* 确定性伪随机（每次加载布局一致） */
+let seed = 20260911;
+const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+
+function makeCrt(it){
+  const cat = window.CATEGORIES.find(c => c.key === it.category);
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'crt' + (it.broken ? ' broken' : '');
+  el.style.setProperty('--tilt', ((rnd() * 10 - 5)).toFixed(2) + 'deg');
+  el.style.setProperty('--tx', ((rnd() * 18 - 9)).toFixed(1) + 'px');
+  el.style.setProperty('--ty', ((rnd() * 14 - 7)).toFixed(1) + 'px');
+  el.style.setProperty('--sc', (0.93 + rnd() * 0.11).toFixed(3));
+  el.style.setProperty('--fdur', (5 + rnd() * 4).toFixed(2) + 's');
+  el.style.setProperty('--fdel', (-rnd() * 6).toFixed(2) + 's');
+  el.style.setProperty('--fdrop', (-(6 + rnd() * 8)).toFixed(1) + 'px');
+  el.style.setProperty('--lit', (0.86 + rnd() * 0.16).toFixed(2));
+  el.setAttribute('aria-label', `查看《${it.title}》详情`);
+  el.innerHTML = `
+    <div class="bezel">
+      <div class="screen">
+        ${it.broken ? '<div class="static-fill"></div>' : (it.noImage ? '<div class="static-fill"></div>' : `<img loading="lazy" src="img/img-${String(it.no).padStart(2,'0')}.jpg" alt="${it.title}">`)}
+        <div class="rollband"></div>
+      </div>
+    </div>`;
+  el.addEventListener('click', () => openCase(it, cat));
+  return el;
+}
+
+/* 无限循环：向下滚动接近底部时追加一批乱序卡片，永不到底 */
+const BATCH = 20;
+let loading = false;
+function appendBatch(){
+  if(loading) return;
+  loading = true;
+  const shuffled = items.slice().sort(() => Math.random() - 0.5);
+  const frag = document.createDocumentFragment();
+  for(let i = 0; i < BATCH; i++) frag.appendChild(makeCrt(shuffled[i % shuffled.length]));
+  stage.appendChild(frag);
+  loading = false;
+}
+items.forEach(it => stage.appendChild(makeCrt(it))); /* 首批：全部档案 */
+window.addEventListener('scroll', () => {
+  if(document.body.classList.contains('locked')) return; /* 入场界面时不加载 */
+  if(window.innerHeight + window.scrollY > document.documentElement.scrollHeight - 900) appendBatch();
+}, {passive:true});
+
+/* ── CRT 音效（Web Audio 实时合成） ─────────────────────────── */
+let _ctx = null;
+function ac(){
+  if(!_ctx){ _ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+  if(_ctx.state === 'suspended') _ctx.resume();
+  return _ctx;
+}
+function noiseBuf(c, dur){
+  const b = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
+  const d = b.getChannelData(0);
+  for(let i = 0; i < d.length; i++) d[i] = Math.random()*2-1;
+  return b;
+}
+function clickSnd(c, t, freq, vol, dur){
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, dur);
+  const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value = freq;
+  const g = c.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f).connect(g).connect(c.destination);
+  s.start(t); s.stop(t + dur + 0.02);
+}
+function playPowerOn(){
+  const c = ac(), t = c.currentTime;
+  clickSnd(c, t, 1600, 0.5, 0.045);
+  const th = c.createOscillator(); th.type='sine';
+  th.frequency.setValueAtTime(170, t+0.02);
+  th.frequency.exponentialRampToValueAtTime(42, t+0.22);
+  const thG = c.createGain();
+  thG.gain.setValueAtTime(0.0001, t+0.02);
+  thG.gain.exponentialRampToValueAtTime(0.5, t+0.045);
+  thG.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+  th.connect(thG).connect(c.destination); th.start(t+0.02); th.stop(t+0.32);
+  const dur = 1.15;
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, dur);
+  const hp = c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 850;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.24, t+0.025);
+  for(let i = 0; i < 16; i++){
+    g.gain.setTargetAtTime(0.05 + Math.random()*0.18, t + 0.06 + Math.random()*(dur-0.15), 0.006);
+  }
+  g.gain.setTargetAtTime(0.0001, t+dur, 0.05);
+  s.connect(hp).connect(g).connect(c.destination); s.start(t); s.stop(t+dur+0.1);
+  const w = c.createOscillator(); w.type='sine';
+  w.frequency.setValueAtTime(2400, t+0.15);
+  w.frequency.exponentialRampToValueAtTime(12500, t+0.85);
+  const wG = c.createGain();
+  wG.gain.setValueAtTime(0.0001, t+0.15);
+  wG.gain.exponentialRampToValueAtTime(0.022, t+0.3);
+  wG.gain.exponentialRampToValueAtTime(0.0001, t+1.0);
+  w.connect(wG).connect(c.destination); w.start(t+0.15); w.stop(t+1.05);
+}
+function playPowerOff(){
+  const c = ac(), t = c.currentTime;
+  clickSnd(c, t, 1200, 0.4, 0.04);
+  const s = c.createBufferSource(); s.buffer = noiseBuf(c, 0.3);
+  const hp = c.createBiquadFilter(); hp.type='highpass';
+  hp.frequency.setValueAtTime(1200, t);
+  hp.frequency.exponentialRampToValueAtTime(300, t+0.28);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+  s.connect(hp).connect(g).connect(c.destination); s.start(t); s.stop(t+0.35);
+}
+
+/* ── 弹窗 ─────────────────────────── */
+const modal = document.getElementById('modal');
+const mbox = document.getElementById('mbox');
+const burst = document.getElementById('burst');
+let opening = false;
+let closing = false;
+
+/* 打乱屏幕阵列（每次关闭弹窗后调用） */
+function shuffleStage(){
+  const kids = Array.from(stage.children);
+  for(let i = kids.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [kids[i], kids[j]] = [kids[j], kids[i]];
+  }
+  kids.forEach(k => {
+    k.style.setProperty('--tilt', (Math.random() * 10 - 5).toFixed(2) + 'deg');
+    k.style.setProperty('--tx', (Math.random() * 18 - 9).toFixed(1) + 'px');
+    k.style.setProperty('--ty', (Math.random() * 14 - 7).toFixed(1) + 'px');
+    k.style.setProperty('--sc', (0.93 + Math.random() * 0.11).toFixed(3));
+    k.style.setProperty('--fdur', (5 + Math.random() * 4).toFixed(2) + 's');
+    k.style.setProperty('--fdel', (-Math.random() * 6).toFixed(2) + 's');
+    k.style.setProperty('--fdrop', (-(6 + Math.random() * 8)).toFixed(1) + 'px');
+    k.style.setProperty('--lit', (0.86 + Math.random() * 0.16).toFixed(2));
+    stage.appendChild(k); /* appendChild 即移动节点 → 同时完成乱序 */
+  });
+}
+
+/* 弹窗文字乱码→解码 */
+const POOL = '的一是了在监控信号像素雪花屏幕档案故障中断未知错误乱码解码数据权力眼睛图像记录窥视01<>/|+=*#@%&';
+function scrambleText(el, real){
+  let step = 0;
+  const tick = () => {
+    el.textContent = Array.from(real).map(ch =>
+      (ch === ' ' || ch === '\n' || ch === '—' || ch === '·') ? ch : POOL[Math.floor(Math.random() * POOL.length)]
+    ).join('');
+    if(++step < 3) setTimeout(tick, 160);
+  };
+  tick();
+}
+
+let currentItem = null;
+let currentCat = null;
+function openCase(it, cat){
+  if(opening || closing) return;
+  currentItem = it; currentCat = cat;
+  opening = true;
+  playPowerOn();
+  burst.style.display = 'block';
+  setTimeout(() => {
+    burst.style.display = 'none';
+    document.getElementById('mscreen').innerHTML = (it.broken || it.noImage)
+      ? '<div class="mstat static-fill"></div><div class="no-signal">NO SIGNAL</div>'
+      : `<img src="img/img-${String(it.no).padStart(2,'0')}.jpg" alt="${it.title}">`;
+
+    /* 重挂开机动画：先克隆重置动画状态（必须在取元素引用之前，否则引用会指向被替换掉的旧节点） */
+    mbox.querySelectorAll('.boot-static, .boot-line, .boot-content').forEach(n => {
+      const c = n.cloneNode(true);
+      n.parentNode.replaceChild(c, n);
+    });
+
+    /* 文字先以乱码显示，0.5 秒后解码为正常文字 */
+    const codeEl = document.getElementById('mcode');
+    const titleEl = document.getElementById('mtitle');
+    const metaEl = document.getElementById('mmeta');
+    const descEl = document.getElementById('mdesc');
+    const realCode = `${cat ? cat.code : ''} / NO.${pad(it.no)} · ${cat ? cat.en : ''}`;
+    const realTitle = `《${it.title}》`;
+    const realMeta = `${it.author ? `<div>AUTHOR — ${it.author}</div>` : '<div>UNKNOWN AUTHOR</div>'}` +
+      `<div class="sub2">${it.year || 'N/A'} · ${cat ? cat.label : ''} · ${cat ? cat.en : ''}${it.added ? ' · <span style="color:#b8543f">素材补充条目</span>' : ''}</div>`;
+    const realDesc = it.desc;
+    scrambleText(codeEl, realCode);
+    scrambleText(titleEl, realTitle);
+    scrambleText(metaEl, realMeta.replace(/<[^>]+>/g, ''));
+    scrambleText(descEl, realDesc);
+    setTimeout(() => {
+      codeEl.textContent = realCode;
+      titleEl.textContent = realTitle;
+      metaEl.innerHTML = realMeta;
+      descEl.textContent = realDesc;
+    }, 500);
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { opening = false; }, 400);
+  }, 620);
+}
+function closeModal(){
+  if(!modal.classList.contains('show') || closing || opening) return;
+  closing = true;
+  playPowerOff(); /* 关机咔哒 + 静电消散 */
+  mbox.classList.add('crt-off'); /* CRT 关机：画面纵向坍缩成亮线 + 静电噪点 */
+  setTimeout(() => {
+    modal.classList.remove('show');
+    mbox.classList.remove('crt-off');
+    document.body.style.overflow = '';
+    closing = false;
+    closeTopo();
+    shuffleStage(); /* 回到界面：打乱卡片顺序与布局 */
+  }, 560);
+}
+/* 事件委托：✕ 按钮在每次开机时会被克隆重建，委托到 modal 上才不会丢 */
+modal.addEventListener('click', e => {
+  if(e.target.closest('.mtopo')){ if(currentItem) openTopo(currentItem, currentCat); return; }
+  if(e.target === modal || e.target.closest('.mclose')) closeModal();
+});
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(topoEl.classList.contains('show')) closeTopo();
+  else closeModal();
+});
+/* ── 拓扑弹窗：THE COORDINATE 分类坐标平面 ─────────────────────────── */
+const topoEl = document.getElementById('topo');
+const tbody = document.getElementById('tbody');
+const tcode = document.getElementById('tcode');
+document.getElementById('tclose').addEventListener('click', closeTopo);
+
+function openTopo(it, cat){
+  const mates = items.filter(x => x.category === it.category);
+  tcode.textContent = `THE COORDINATE — ${cat ? cat.code : ''} ${cat ? cat.label : ''} · ${mates.length} NODES`;
+
+  const bw = tbody.clientWidth || 400;
+  const bh = tbody.clientHeight || 600;
+  const unit = (Math.min(bw, bh) / 2 - 60) / 10;  /* 每坐标单位像素 */
+  const cx0 = bw / 2, cy0 = bh / 2;
+  const frag = [];
+
+  /* 十字轴 + 中心光晕 */
+  frag.push('<div class="topo-cross-v"></div><div class="topo-cross-h"></div><div class="topo-glow"></div>');
+
+  /* 轴刻度：-10 ~ 10，像素点阵数字（参考图样式） */
+  for(let v = -10; v <= 10; v += 5){
+    if(v !== 0){
+      frag.push(`<span class="tick" style="left:${cx0 + v * unit}px; top:${cy0 - 14}px">${v}</span>`);
+      frag.push(`<span class="tick" style="left:${cx0 + 14}px; top:${cy0 - v * unit}px">${v}</span>`);
+    }
+  }
+  frag.push(`<span class="tick" style="left:${cx0 - 18}px; top:${cy0 + 16}px">0</span>`);
+
+  /* 分类节点：黄金角螺旋布点（确定性） */
+  const activeIdx = Math.max(0, mates.findIndex(x => x.no === it.no));
+  const maxR = Math.min(bw, bh) / 2 - 78;
+  let activePos = null;
+  mates.forEach((m, k) => {
+    const a = k * 137.508 * Math.PI / 180;
+    const r = Math.min(46 + k * 17, maxR);
+    const px = cx0 + Math.cos(a) * r;
+    const py = cy0 + Math.sin(a) * r * 0.86;
+    const isActive = m.no === it.no;
+    if(isActive) activePos = { px, py };
+    frag.push(`<div class="tnode${isActive ? ' active' : ''}" style="left:${px}px; top:${py}px" title="${m.title}"></div>`);
+  });
+
+  /* 原点 → 激活节点的虚线指引 */
+  if(activePos){
+    const dx = activePos.px - cx0, dy = activePos.py - cy0;
+    const len = Math.hypot(dx, dy);
+    const rot = Math.atan2(dy, dx) * 180 / Math.PI;
+    frag.push(`<div class="tline" style="left:${cx0}px; top:${cy0}px; width:${len}px; transform:rotate(${rot}deg)"></div>`);
+    /* 坐标标签：(12.5) → (0.0, 0.0)，参考图样式 */
+    const gx = Math.round(dx / unit * 2) / 2;
+    const gy = Math.round(-dy / unit * 2) / 2;
+    const below = dy < 0; /* 节点在上方时标签放下面，反之放上面 */
+    const ly = below ? activePos.py + 22 : activePos.py - 52;
+    frag.push(`<div class="tlabel" style="left:${activePos.px}px; top:${ly}px">
+      《${it.title}》 · NO.${pad(it.no)}
+      <div class="coord">(${gx.toFixed(1)}, ${gy.toFixed(1)}) &#8594; (0.0, 0.0)</div>
+    </div>`);
+  }
+
+  tbody.innerHTML = frag.join('');
+  topoEl.classList.add('show');
+  document.body.classList.add('topo-on');
+}
+function closeTopo(){
+  topoEl.classList.remove('show');
+  document.body.classList.remove('topo-on');
+}
+
+/* ── PANOPTIC 全景象限图：黑白灰像素场 + 光标热度交互（机制参考 craft.wild.as）
+   常态为黑白灰环境点阵；光标经过沿途像素升温放大；停留核心变红；
+   档案点停留约1s → 像素卡片放大展开；点击卡片/档案点 → 详情弹窗（不跳转） ── */
+(function(){
+  const stage = document.getElementById('quadStage');
+  const cv = document.getElementById('quadCanvas');
+  const card = document.getElementById('qcard');
+  const cardImg = card.querySelector('img');
+  const cardTitle = card.querySelector('.qc-title');
+  const QP = window.QUADPOS || {};
+  if(!stage || !cv || !cv.getContext) return;
+  const ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const CELL = 16;                       /* 像素格尺寸 */
+  const RED = '#e0483a';                 /* 光标停留红 */
+  let W = 0, H = 0, cols = 0, rows = 0, heat = null, t = 0;
+  let mx = -1, my = -1, pmx = -1, pmy = -1, cursorIn = false;
+
+  /* 档案点：象限坐标 → 3D 纵深场景（u=深度 0远1近, wx=横向 -1..1, px/py=屏幕坐标每帧重算） */
+  const pts = items.map(it => {
+    const pos = QP[it.no] || [((it.no * 37) % 17) - 8, ((it.no * 53) % 17) - 8];
+    const qx = Math.max(-9.6, Math.min(9.6, pos[0]));
+    const qy = Math.max(-9.6, Math.min(9.6, pos[1]));
+    return { it, wx: qx / 10, u: Math.max(0.06, Math.min(0.98, (10 - qy) / 20)), px: 0, py: 0 };
+  });
+
+  function hsh(c, r){ const n = Math.sin(c * 127.1 + r * 311.7) * 43758.5453; return n - Math.floor(n); }
+
+  function size(){
+    const r = stage.getBoundingClientRect();
+    W = Math.max(320, Math.round(r.width)); H = Math.max(320, Math.round(r.height));
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    cols = Math.ceil(W / CELL) + 1; rows = Math.ceil(H / CELL) + 1;
+    heat = new Float32Array(cols * rows);
+    hideCard();
+  }
+
+  /* 漂浮尘埃：暗房空间中的慢速浮粒（深度视差），屏幕比例坐标 */
+  const dust = [];
+  for(let i = 0; i < 130; i++) dust.push({ x: Math.random(), y: Math.random(), z: 0.25 + Math.random() * 0.75, ph: Math.random() * 6.283 });
+
+  /* 热度沉积：以(x,y)为中心按高斯扩散（craft.wild.as 同款） */
+  function dep(x, y, amt, sig){
+    const cc = x / CELL, cr = y / CELL, rad = Math.ceil(sig * 1.6), inv = 1 / (2 * sig * sig * 0.18);
+    for(let dr = -rad; dr <= rad; dr++) for(let dc = -rad; dc <= rad; dc++){
+      const c = (cc + dc) | 0, r = (cr + dr) | 0;
+      if(c < 0 || r < 0 || c >= cols || r >= rows) continue;
+      const dx = c + .5 - cc, dy = r + .5 - cr;
+      const w = Math.exp(-(dx * dx + dy * dy) * inv);
+      if(w < .02) continue;
+      const id = r * cols + c, v = heat[id] + amt * w;
+      heat[id] = v > 1 ? 1 : v;
+    }
+  }
+  /* 沿光标路径分段补点，快速甩动不断线 */
+  function follow(x, y, sig){
+    if(pmx < 0){ pmx = x; pmy = y; }
+    const dx = x - pmx, dy = y - pmy, dl = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.min(48, Math.round(dl / (CELL * 0.8))));
+    for(let s = 1; s <= steps; s++){ const f = s / steps; dep(pmx + dx * f, pmy + dy * f, 0.16, sig); }
+    pmx = x; pmy = y;
+  }
+
+  /* 停留 ~1s 展开的像素卡片 */
+  const DWELL = 1000;
+  let hoverPt = null, hoverSince = 0, cardOn = false;
+  function hideCard(){ cardOn = false; card.classList.remove('on'); }
+  function showCard(p){
+    const cw = 172, ch = 168;
+    let x = p.px - cw / 2, y = p.py - ch / 2;
+    x = Math.max(8, Math.min(W - cw - 8, x));
+    y = Math.max(8, Math.min(H - ch - 8, y));
+    card.style.left = x + 'px'; card.style.top = y + 'px';
+    if(!cardOn){
+      if(!p.it.broken && !p.it.noImage) cardImg.src = 'img/img-' + String(p.it.no).padStart(2,'0') + '.jpg';
+      else cardImg.removeAttribute('src');
+      cardImg.alt = p.it.title;
+      cardTitle.innerHTML = '<span class="qc-no">NO.' + pad(p.it.no) + '</span>《' + p.it.title + '》';
+      card.setAttribute('aria-label', '查看《' + p.it.title + '》详情');
+    }
+    cardOn = true; card.classList.add('on');
+  }
+  function updateHover(){
+    if(!cursorIn || mx < 0){
+      if(hoverPt){ hoverPt = null; hideCard(); }
+      return;
+    }
+    let best = null, bd = 1e9;
+    for(const p of pts){
+      const d = Math.hypot(p.px - mx, p.py - my);
+      const lim = Math.max(22, (p.s || 6) * 2.1);   /* 命中半径随透视大小自适应 */
+      if(d < lim && d < bd){ bd = d; best = p; }
+    }
+    if(best !== hoverPt){ hoverPt = best; hoverSince = performance.now(); hideCard(); }
+    else if(hoverPt && !cardOn && performance.now() - hoverSince >= DWELL) showCard(hoverPt);
+  }
+
+  stage.addEventListener('pointermove', e => {
+    const r = stage.getBoundingClientRect();
+    mx = e.clientX - r.left; my = e.clientY - r.top; cursorIn = true;
+  });
+  stage.addEventListener('pointerleave', () => {
+    cursorIn = false; mx = my = -1; pmx = pmy = -1; hoverPt = null; hideCard();
+  });
+  const openHover = () => {
+    if(!hoverPt) return;
+    hideCard();
+    openCase(hoverPt.it, window.CATEGORIES.find(c => c.key === hoverPt.it.category));
+  };
+  cv.addEventListener('click', openHover);
+  card.addEventListener('click', openHover);
+
+  function render(){
+    for(let i = 0; i < heat.length; i++){ heat[i] *= 0.88; if(heat[i] < .003) heat[i] = 0; }
+    /* 热度只沉积在光标所在的屏幕位置：像素效果与光标严格重合 */
+    if(cursorIn && mx > 0) follow(mx, my, 1.5);
+    ctx.clearRect(0, 0, W, H);
+
+    /* ── 3D 纵深场景：暗房地网格，透视线收缩到地平线 ── */
+    const horizon = H * 0.32, floorBot = H * 0.94, ccx = W / 2;
+    const syU = u => horizon + (floorBot - horizon) * Math.pow(u, 1.7);
+    const spread = u => W * (0.055 + 0.39 * u);
+    ctx.lineWidth = 1;
+    for(const gx of [-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1]){
+      ctx.strokeStyle = gx === 0 ? 'rgba(190,193,186,.22)' : 'rgba(150,155,148,.13)';
+      ctx.beginPath();
+      ctx.moveTo(ccx + gx * spread(0.02), horizon);
+      ctx.lineTo(ccx + gx * spread(1.02), floorBot);
+      ctx.stroke();
+    }
+    for(let i = 1; i <= 9; i++){
+      const u = i / 10;
+      ctx.strokeStyle = 'rgba(150,155,148,' + (0.04 + 0.11 * u) + ')';
+      ctx.beginPath(); ctx.moveTo(ccx - spread(u), syU(u)); ctx.lineTo(ccx + spread(u), syU(u)); ctx.stroke();
+    }
+    /* 地平线微光 */
+    ctx.strokeStyle = 'rgba(215,217,210,.30)';
+    ctx.beginPath(); ctx.moveTo(ccx - spread(0.02), horizon); ctx.lineTo(ccx + spread(0.02), horizon); ctx.stroke();
+
+    /* 漂浮尘埃：慢速上浮 + 深度视差 + 闪烁 */
+    for(const d of dust){
+      const yy = ((d.y * H - t * 0.008 * d.z) % H + H) % H;
+      const xx = d.x * W + Math.sin(t * 0.0004 + d.ph) * 26 * d.z;
+      ctx.globalAlpha = 0.05 + 0.10 * (0.5 + 0.5 * Math.sin(t * 0.003 + d.ph * 3));
+      ctx.fillStyle = '#9ba09a';
+      const ds = 1 + 2 * d.z;
+      ctx.fillRect(xx - ds / 2, yy - ds / 2, ds, ds);
+    }
+    ctx.globalAlpha = 1;
+
+    /* 光标热度像素：灰 → 白 → 红，尺寸随热度放大（严格位于光标处） */
+    for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++){
+      const h = heat[r * cols + c];
+      if(h < 0.22) continue;
+      const hx = c * CELL + CELL / 2, hy = r * CELL + CELL / 2;
+      let s = CELL * (0.34 + h * 0.8); if(s > CELL * 1.7) s = CELL * 1.7;
+      ctx.fillStyle = h > 0.74 ? RED : h > 0.5 ? '#efefe7' : h > 0.36 ? '#b9bcb4' : '#7d8078';
+      ctx.fillRect(hx - s / 2, hy - s / 2, s, s);
+    }
+
+    /* 档案漂浮片：透视投影 近大远小 近亮远暗；悬停变红放大 */
+    for(const p of pts){
+      const u = p.u;
+      const lift = (8 + 16 * u) * (0.7 + 0.9 * hsh(p.it.no * 3.1, 7.7));   /* 漂浮高度随机，营造空间体积感 */
+      const bob = Math.sin(t * 0.0012 + p.it.no * 1.7) * (2 + 5 * u);
+      p.px = ccx + p.wx * spread(u);
+      p.py = syU(u) - lift + bob;
+      const d = cursorIn ? Math.hypot(p.px - mx, p.py - my) : 999;
+      const on = (p === hoverPt);
+      p.s = (4 + 11 * u) * (on ? 1.7 : 1) * (1 + Math.max(0, 1 - d / 120) * 0.35);
+      const depthA = 0.5 + 0.5 * u;
+      /* 厚度暗块：右下错位，营造立体漂浮板 */
+      ctx.globalAlpha = depthA * 0.85;
+      ctx.fillStyle = '#0a0c0e';
+      ctx.fillRect(p.px - p.s / 2 + p.s * 0.30, p.py - p.s / 2 + p.s * 0.30, p.s, p.s);
+      /* 面板本体：近白远灰；悬停红 */
+      ctx.globalAlpha = on ? 1 : depthA;
+      ctx.fillStyle = on ? RED : (u > 0.66 ? '#e8eae2' : u > 0.33 ? '#b9bcb4' : '#7d8078');
+      ctx.fillRect(p.px - p.s / 2, p.py - p.s / 2, p.s, p.s);
+      ctx.globalAlpha = 1;
+      if(on){
+        ctx.strokeStyle = 'rgba(224,72,58,.6)'; ctx.lineWidth = 1;
+        ctx.strokeRect(p.px - p.s, p.py - p.s, p.s * 2, p.s * 2);
+      }
+    }
+  }
+  let inView = false;
+  function loop(ts){
+    if(!loop.l) loop.l = ts; t += ts - loop.l; loop.l = ts;
+    const active = document.body.classList.contains('view-quad');
+    if(active && !inView){ inView = true; size(); }   /* 入场显示后才量尺寸（隐藏时rect为0） */
+    if(!active) inView = false;
+    if(active){ updateHover(); render(); }
+    requestAnimationFrame(loop);
+  }
+  addEventListener('resize', size);
+  requestAnimationFrame(loop);
+
+  document.getElementById('qmenu').addEventListener('click', window.backToEntry);
+  document.getElementById('menuBtn').addEventListener('click', window.backToEntry);
+  /* 自动化验证用：读取各档案片当前屏幕坐标 */
+  window.__quadPts = () => pts.map(p => ({ no: p.it.no, x: Math.round(p.px), y: Math.round(p.py), s: +p.s.toFixed(1) }));
+})();
+
+
+/* ── 红点监控闪烁光标（监控头瞄准：红芯 + 闪烁环 + 四向刻度，全局生效） ─────────────────────────── */
+(function(){
+  const layer = document.getElementById('eyeLayer');
+  if(!layer || !layer.getContext) return;
+  if(matchMedia('(pointer:coarse)').matches){ layer.style.display = 'none'; document.documentElement.style.cursor = ''; return; }
+  const ctx = layer.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const RED = 'rgba(224,72,58,';
+
+  function fit(){
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    layer.width = Math.round(innerWidth * dpr); layer.height = Math.round(innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+  }
+  fit();
+  addEventListener('resize', fit);
+
+  let mx = -200, my = -200, visible = false;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; visible = true; });
+  document.documentElement.addEventListener('mouseleave', () => { visible = false; });
+
+  (function loop(){
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    if(visible){
+      const x = Math.round(mx), y = Math.round(my);
+      const blink = Math.floor(performance.now() / 460) % 2; /* 监控头式闪烁 */
+      const a = blink ? 0.95 : 0.18;
+      ctx.fillStyle = RED + '1)';                 /* 红点核心 */
+      ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+      ctx.strokeStyle = RED + a + ')';            /* 闪烁瞄准环 */
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();                            /* 四向刻度 */
+      ctx.moveTo(x - 16, y); ctx.lineTo(x - 11, y);
+      ctx.moveTo(x + 11, y); ctx.lineTo(x + 16, y);
+      ctx.moveTo(x, y - 16); ctx.lineTo(x, y - 11);
+      ctx.moveTo(x, y + 11); ctx.lineTo(x, y + 16);
+      ctx.stroke();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+
+/* 深链：#case-N 直接打开对应档案 */
+window.addEventListener('DOMContentLoaded', () => {
+  const m = location.hash.match(/^#case-(\d+)$/);
+  if(m){
+    const it = items.find(x => x.no === Number(m[1]));
+    if(it) setTimeout(() => openCase(it, window.CATEGORIES.find(c => c.key === it.category)), 600);
+  }
+});
+</script>
+</body>
+</html>
