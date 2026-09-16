@@ -520,10 +520,42 @@ body.view-quad .quad-head{padding-left:clamp(220px, 25vw, 330px)}
   60%{opacity:.9; filter:brightness(2)}
   100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
 }
-#glitchCanvas{
-  position:fixed; inset:0; z-index:450; display:none;
-  width:100vw; height:100vh; background:#000;
+/* ── 雪花故障闪动（全屏转场，同第八版） ─────────────────── */
+.glitch-burst{
+  position:fixed; inset:0; z-index:450; background:#050606; overflow:hidden;
+  animation:burst-in .05s steps(1) both;
 }
+.glitch-burst .gnoise{
+  position:absolute; inset:-40px;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.08) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:burst-noise .09s steps(2) infinite;
+}
+@keyframes burst-noise{
+  0%{transform:translate(0,0);filter:contrast(1.4)}
+  25%{transform:translate(-30px,18px);filter:contrast(2) invert(.08)}
+  50%{transform:translate(24px,-26px);filter:contrast(1.1) brightness(1.3)}
+  75%{transform:translate(-14px,-12px);filter:contrast(1.8) invert(.15)}
+  100%{transform:translate(10px,20px);filter:contrast(1.4)}
+}
+.glitch-burst .gband{
+  position:absolute; left:0; right:0; height:22%; top:30%;
+  background:linear-gradient(to bottom, transparent, rgba(242,242,234,.16), transparent);
+  animation:burst-band .12s steps(3) infinite; mix-blend-mode:screen;
+}
+@keyframes burst-band{0%{top:8%}33%{top:52%}66%{top:74%}100%{top:20%}}
+.glitch-burst .gtext{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  color:rgba(242,242,234,.85); font-size:clamp(12px,2vw,24px); letter-spacing:.5em;
+  text-shadow:2px 0 rgba(184,84,63,.8), -2px 0 rgba(120,160,200,.8);
+  animation:burst-text .1s steps(2) infinite;
+}
+@keyframes burst-text{
+  0%,100%{opacity:1;transform:translate(-50%,-50%) skewX(0)}
+  50%{opacity:.55;transform:translate(calc(-50% + 4px),-50%) skewX(-4deg)}
+}
+@keyframes burst-in{from{opacity:0}to{opacity:1}}
 body.locked{overflow:hidden}
 
 /* ── 红点监控闪烁光标（监控头瞄准） ─────────────────────────── */
@@ -551,7 +583,11 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     </nav>
   </div>
 </div>
-<canvas id="glitchCanvas" aria-hidden></canvas>
+<div class="glitch-burst" id="burst" style="display:none" aria-hidden>
+  <div class="gnoise"></div>
+  <div class="gband"></div>
+  <div class="gtext">SIGNAL INTERRUPTED</div>
+</div>
 
 <header>
   <h1>监控室<span class="en">MONITOR ROOM · B10</span></h1>
@@ -762,100 +798,14 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   let feTimer = 0;
   addEventListener('resize', () => { clearTimeout(feTimer); feTimer = setTimeout(renderFisheye, 200); });
 
-  /* ── 全屏数字故障艺术 glitch（VDMX 故障风）：RGB 通道分离 + 水平切片错位 + 数据色块 + 频闪 ──
-     对当前鱼眼画面实时故障化，持续 dur 毫秒后进入目标界面 */
-  const gc = document.getElementById('glitchCanvas');
-  const gctx = gc.getContext('2d');
-  let gbRunning = false;
+  /* ── 全屏雪花故障闪动转场（同第八版）：噪点抖动 + 扫描亮带 + SIGNAL INTERRUPTED ── */
+  const burstEl = document.getElementById('burst');
   const glitchBurst = (dur, done) => {
-    if(gbRunning) return;
-    gbRunning = true;
-    const DUR = dur || 300;
-    const W = gc.width = innerWidth, H = gc.height = innerHeight;
-    gc.style.display = 'block';
-
-    /* 预计算：抓鱼眼画面帧，拆出 R/G/B 三个单通道画布（之后每帧只做偏移叠加，极快） */
-    const chans = [];
-    const sw = feC.width, sh = feC.height;
-    if(sw > 4 && feImg){
-      const sd = feCtx.getImageData(0, 0, sw, sh).data;
-      for(let k = 0; k < 3; k++){
-        const c = document.createElement('canvas');
-        c.width = sw; c.height = sh;
-        const x = c.getContext('2d');
-        const im = x.createImageData(sw, sh);
-        const d = im.data;
-        for(let i = 0; i < d.length; i += 4){
-          d[i]     = k === 0 ? sd[i] : 0;
-          d[i + 1] = k === 1 ? sd[i + 1] : 0;
-          d[i + 2] = k === 2 ? sd[i + 2] : 0;
-          d[i + 3] = 255;
-        }
-        x.putImageData(im, 0, 0);
-        chans.push(c);
-      }
-    }
-    /* 全屏 cover 参数 */
-    const cover = c => {
-      const s = Math.max(W / c.width, H / c.height);
-      return [(W - c.width * s) / 2, (H - c.height * s) / 2, c.width * s, c.height * s];
-    };
-    const t0 = performance.now();
-    const GLITCH_COLORS = ['#ff00c8', '#00fff2', '#b6ff00', '#ffea00', '#7b2fff'];
-    const step = () => {
-      const t = performance.now(), p = (t - t0) / DUR;
-      gctx.globalCompositeOperation = 'source-over';
-      gctx.globalAlpha = 1;
-      gctx.fillStyle = '#000';
-      gctx.fillRect(0, 0, W, H);
-      if(chans.length === 3){                       /* RGB 通道分离：偏移量随故障进度抖动 */
-        gctx.globalCompositeOperation = 'lighter';
-        const amp = 8 + 46 * Math.min(1, p * 2) * (0.5 + Math.random() * 0.9);
-        const [cx0, cy0, cw, ch] = cover(chans[0]);
-        const dy0 = (Math.random() - 0.5) * 12;
-        gctx.drawImage(chans[0], cx0 - amp, cy0 + dy0, cw, ch);
-        gctx.drawImage(chans[1], cx0, cy0, cw, ch);
-        gctx.drawImage(chans[2], cx0 + amp, cy0 - dy0, cw, ch);
-        gctx.globalCompositeOperation = 'source-over';
-      }
-      /* 水平切片错位（条带数与幅度随进度增加） */
-      const slices = 4 + Math.floor(p * 10);
-      for(let i = 0; i < slices; i++){
-        const y0 = Math.random() * H;
-        const hh = 4 + Math.random() * (20 + p * 60);
-        const dx = (Math.random() - 0.5) * (40 + p * 220);
-        gctx.drawImage(gc, 0, y0, W, hh, dx, y0, W, hh);
-      }
-      /* 数据损坏色块 */
-      const blocks = 3 + Math.floor(p * 8);
-      for(let i = 0; i < blocks; i++){
-        gctx.globalAlpha = 0.35 + Math.random() * 0.55;
-        gctx.fillStyle = GLITCH_COLORS[(Math.random() * GLITCH_COLORS.length) | 0];
-        gctx.fillRect(Math.random() * W, Math.random() * H,
-                      20 + Math.random() * 220, 3 + Math.random() * 26);
-      }
-      /* 扫描暗线 + 随机频闪反相带 */
-      gctx.globalAlpha = 1;
-      gctx.fillStyle = 'rgba(0,0,0,.35)';
-      for(let y = (t / 40 | 0) % 4; y < H; y += 4) gctx.fillRect(0, y, W, 1);
-      if(Math.random() < 0.4){
-        gctx.globalCompositeOperation = 'difference';
-        gctx.fillStyle = '#fff';
-        gctx.fillRect(0, Math.random() * H, W, 6 + Math.random() * 40);
-        gctx.globalCompositeOperation = 'source-over';
-      }
-      if(Math.random() < 0.3){                        /* 全屏频闪 */
-        gctx.fillStyle = 'rgba(255,255,255,' + (0.08 + Math.random() * 0.2) + ')';
-        gctx.fillRect(0, 0, W, H);
-      }
-      if(t - t0 < DUR) requestAnimationFrame(step);
-      else {
-        gc.style.display = 'none';
-        gbRunning = false;
-        done && done();
-      }
-    };
-    requestAnimationFrame(step);
+    burstEl.style.display = 'block';
+    setTimeout(() => {
+      burstEl.style.display = 'none';
+      done && done();
+    }, dur || 560);
   };
 
   /* 激活与菜单选择 */
@@ -871,22 +821,22 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     if(entered) return;
     entered = true;
     playPowerOn();
-    glitchBurst(300);                /* 数字故障快切 0.3s */
+    glitchBurst(560);                /* 同第八版 560ms */
     entry.classList.add('exiting');
-    entry.style.animationDuration = '.3s';   /* 退出动画同步提速 */
+    entry.style.animationDuration = '.56s';  /* 退出动画与转场同步 */
     setTimeout(() => {
       entry.style.display = 'none';
-      gc.style.display = 'none';
+      burstEl.style.display = 'none';
       document.body.classList.remove('locked');
       showView(mode);
-    }, 300);
+    }, 560);
   };
   /* 点击任意处：先雪花屏爆发，再浮现右侧选项 */
   entry.addEventListener('click', () => {
     if(entered) return;
     if(!activated){
       activated = true;
-      glitchBurst(300, () => menu.classList.add('on'));  /* 0.3s 故障快切 */
+      glitchBurst(560, () => menu.classList.add('on'));  /* 同第八版 560ms */
       return;
     }
   });
