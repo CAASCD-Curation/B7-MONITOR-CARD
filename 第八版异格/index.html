@@ -711,6 +711,13 @@ html,body,a,button,[role="button"]{cursor:none}
   const monText = document.getElementById('monText');
   document.body.classList.add('locked');
 
+  /* URL 参数 ?view=cards：跳过入场直达卡片界面（供第十一版 CRUISE 跳转） */
+  if(new URLSearchParams(location.search).get('view') === 'cards'){
+    entry.style.display = 'none';
+    document.body.classList.remove('locked');
+    return;
+  }
+
   /* 左上角：实时年份月份日期时间（YYYY-MM-DD HH:MM:SS，像素点阵字体） */
   const clock = document.getElementById('hudClock');
   const tick = () => {
