@@ -942,6 +942,11 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     entry.classList.add('exiting');
     entry.style.animationDuration = '.56s';  /* 退出动画与转场同步 */
     setTimeout(() => {
+      if(mode === 'cruise'){
+        /* CRUISE：跳转第八版异格卡片界面（?view=cards 跳过其入场直达屏幕墙） */
+        location.href = '../第八版异格/?view=cards';
+        return;
+      }
       entry.style.display = 'none';
       burstEl.style.display = 'none';
       document.body.classList.remove('locked');
