@@ -413,6 +413,16 @@ footer{
   .modal.topo-on{padding-left:16px}
 }
 
+/* MENU 主菜单键：跳回第十一版鱼眼镜头入场 */
+.menu-btn{
+  position:fixed; right:22px; bottom:22px; z-index:120;
+  background:rgba(10,13,16,.88); border:1px solid #2a2d30; color:var(--acc);
+  padding:8px 16px; cursor:pointer; font-size:13px; border-radius:4px; font-family:inherit;
+  letter-spacing:.18em; box-shadow:0 0 18px rgba(0,0,0,.6);
+}
+.menu-btn:hover{border-color:var(--acc); background:rgba(200,214,192,.1);}
+body.locked .menu-btn{display:none}
+
 /* 时间线弹窗 · 右侧独立可关闭面板（拓扑旁边） */
 .tl{
   position:fixed; top:0; right:0; bottom:0; z-index:224; width:400px;
@@ -632,6 +642,8 @@ html,body,a,button,[role="button"]{cursor:none}
 </header>
 
 <main class="stage" id="stage"></main>
+
+<button type="button" class="menu-btn" id="menuBtn">&#9776; MENU &#183; 主菜单</button>
 
 <canvas id="eyeLayer" aria-hidden></canvas>
 
@@ -998,6 +1010,14 @@ modal.addEventListener('click', e => {
   if(e.target === modal || e.target.closest('.mclose')) closeModal();
 });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+/* ── MENU 主菜单：雪花故障闪动后跳回第十一版鱼眼镜头入场 ─────────────────────────── */
+document.getElementById('menuBtn').addEventListener('click', () => {
+  try{ playPowerOn(); }catch(err){}
+  const burstEl = document.getElementById('burst');
+  burstEl.style.display = 'block';   /* 与第十一版同款 560ms 故障闪动 */
+  setTimeout(() => { location.href = '../第十一版/'; }, 560);
+});
 
 /* ── 像素红眼自定义光标（纯红线条眼形 + 颗粒噪点拖尾，点击眨眼） ─────────────────────────── */
 (function(){
