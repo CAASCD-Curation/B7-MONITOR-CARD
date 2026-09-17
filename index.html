@@ -660,6 +660,102 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   pointer-events:none;
   image-rendering:pixelated; image-rendering:crisp-edges;
 }
+
+/* ── 左侧隐藏导航栏：鼠标靠近左缘弹出；选项悬停放大+红色高亮 ─────────────────────────── */
+.dock-hot{
+  position:fixed; left:0; top:0; bottom:0; width:16px; z-index:9490;
+}
+.dock{
+  position:fixed; left:0; top:0; bottom:0; z-index:9491;
+  width:clamp(220px,23vw,280px);
+  display:flex; flex-direction:column;
+  padding:76px 0 20px;
+  background:rgba(8,10,12,.96);
+  border-right:1px solid #23272b;
+  box-shadow:18px 0 60px rgba(0,0,0,.6), inset -1px 0 0 rgba(255,255,255,.04);
+  transform:translateX(-103%);
+  transition:transform .34s cubic-bezier(.2,.8,.3,1);
+  pointer-events:none;
+}
+.dock.on{transform:none; pointer-events:auto;}
+.dock-brand{
+  flex:none; padding:0 26px 14px; font-size:12px; letter-spacing:.34em; color:#4a4d48;
+  border-bottom:1px solid #1a1d20; margin:0 0 12px;
+}
+.dock-brand b{color:var(--red); font-weight:400;}
+.dock a{
+  display:flex; align-items:baseline; gap:10px;
+  margin:3px 12px; padding:13px 16px;
+  font-size:14px; letter-spacing:.2em; color:var(--dim); text-decoration:none;
+  border:1px solid transparent; border-left:3px solid transparent;
+  transform-origin:left center;
+  transition:transform .18s cubic-bezier(.2,.8,.3,1), color .18s, background .18s,
+             border-color .18s, letter-spacing .18s, text-shadow .18s;
+}
+.dock a small{font-size:11px; letter-spacing:.3em; color:#4a4d48; transition:inherit;}
+/* 悬停 / 当前分栏：放大 + 红色高亮 */
+.dock a:hover, .dock a.hot{
+  transform:scale(1.13);
+  color:#e0483a;
+  background:rgba(224,72,58,.08);
+  border-color:rgba(224,72,58,.55); border-left-color:#e0483a;
+  letter-spacing:.3em;
+  text-shadow:0 0 14px rgba(224,72,58,.5);
+}
+.dock a:hover small, .dock a.hot small{color:#e0483a;}
+.dock-foot{
+  flex:none; margin-top:auto; padding:12px 26px 0;
+  font-size:10px; letter-spacing:.26em; color:#3a3d38;
+  border-top:1px solid #1a1d20;
+}
+
+/* ── SNAP 抓拍面板 · 右侧独立可关闭面板 ─────────────────────────── */
+.snap{
+  position:fixed; top:0; right:0; bottom:0; z-index:226; width:400px;
+  display:none; flex-direction:column;
+  background:var(--panel); border-left:1px solid #000;
+  box-shadow:-24px 0 60px rgba(0,0,0,.7), inset 1px 0 0 rgba(255,255,255,.06);
+  animation:topo-in .32s cubic-bezier(.2,.8,.3,1) both;
+}
+.snap.show{display:flex}
+.snapbody{
+  flex:1; margin:14px; overflow-y:auto;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px), #0b0d0f;
+  border:1px solid #1c2023; border-radius:4px;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+  padding:14px;
+}
+.snap-btn{
+  display:block; width:100%; padding:14px; font-family:inherit; font-size:13px; letter-spacing:.24em;
+  background:rgba(224,72,58,.1); color:#e0483a; border:1px solid rgba(224,72,58,.6); border-radius:3px;
+  transition:background .18s, transform .18s, box-shadow .18s;
+}
+.snap-btn:hover{background:rgba(224,72,58,.2); transform:scale(1.03); box-shadow:0 0 18px rgba(224,72,58,.3);}
+.snap-btn:disabled{opacity:.45; transform:none; box-shadow:none;}
+.snap-hintline{margin:10px 2px 14px; font-size:10px; letter-spacing:.2em; color:#4a4d48;}
+.snapgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.snapitem{position:relative; border:1px solid #23272b; background:#000;}
+.snapitem img{display:block; width:100%; height:auto; image-rendering:pixelated;}
+.snapitem:hover{border-color:#e0483a;}
+.snapitem .si-time{
+  position:absolute; left:0; right:0; bottom:0; padding:3px 6px;
+  font-size:9px; letter-spacing:.12em; color:var(--ink);
+  background:rgba(5,6,7,.82); text-shadow:1px 1px 0 #000;
+}
+.snapitem .si-del{
+  position:absolute; top:2px; right:2px; width:18px; height:18px; line-height:16px;
+  text-align:center; background:rgba(5,6,7,.85); color:#b8543f;
+  border:1px solid rgba(184,84,63,.6); font-size:10px;
+}
+.snapitem .si-del:hover{background:#b8543f; color:#0b0d0f;}
+.snap-empty{grid-column:1/-1; padding:26px 10px; text-align:center; font-size:11px; letter-spacing:.22em; color:#3a3d38;}
+/* 快门闪光 */
+.snap-flash{position:fixed; inset:0; z-index:9700; pointer-events:none; background:#f4f4ec; opacity:0;}
+.snap-flash.go{animation:snapflash .5s steps(4) both;}
+@keyframes snapflash{0%{opacity:.95}100%{opacity:0}}
+/* 抓拍瞬间：隐藏自定义光标/导航/面板，避免入镜 */
+body.snapping #eyeLayer, body.snapping .dock, body.snapping .dock-hot,
+body.snapping .snap, body.snapping .snap-flash{display:none !important;}
 </style>
 </head>
 <body class="flicker-all">
@@ -667,6 +763,18 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
 <div class="vignette"></div>
 <div class="scan-global"></div>
 <div class="osd-clock" id="clock">----年--月--日 星期- --:--:--</div>
+
+<!-- 左侧隐藏导航栏：鼠标靠近左缘弹出 -->
+<div class="dock-hot" id="dockHot" aria-hidden="true"></div>
+<nav class="dock" id="dock" aria-label="分栏导航">
+  <div class="dock-brand">B10 <b>·</b> MONITOR</div>
+  <a data-nav="menu" class="hot" href="#menu">MENU<small>主界面</small></a>
+  <a data-nav="cruise" href="#cruise">CRUSIE<small>自动轮巡</small></a>
+  <a data-nav="panoptic" href="#panoptic">PANOPTIC<small>全景</small></a>
+  <a data-nav="snap" href="#snap">SNAP<small>抓拍</small></a>
+  <a data-nav="time" href="#time">TIME<small>时间轴</small></a>
+  <div class="dock-foot">◄ NAV — 移开光标自动收起</div>
+</nav>
 
 <!-- 入场界面：鱼眼监控镜头 -->
 <div class="entry" id="entry" role="button" aria-label="进入监控室档案">
@@ -786,9 +894,27 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   <div class="tfoot">按年份排序 — 点击条目跳转档案详情</div>
 </div>
 
+<!-- 抓拍快照面板 · 右侧独立可关闭面板 -->
+<div class="snap" id="snap" role="dialog" aria-label="抓拍快照">
+  <div class="ttitlebar">
+    <span class="rec"></span>
+    <span class="tcode">SNAP · 抓拍快照</span>
+    <button type="button" class="mclose" id="snapclose" aria-label="关闭抓拍">✕</button>
+  </div>
+  <div class="snapbody">
+    <button type="button" id="snapBtn" class="snap-btn">◉ CAPTURE · 抓拍当前画面</button>
+    <div class="snap-hintline">快门一闪自动下载全图 PNG · 相册仅存本机缩略预览</div>
+    <div class="snapgrid" id="snapGrid"></div>
+  </div>
+  <div class="tfoot" id="snapStatus">READY — 等待抓拍</div>
+</div>
+<div class="snap-flash" id="snapFlash" aria-hidden="true"></div>
+
 <script src="data.js"></script>
 <script src="topology.js"></script>
 <script src="timeline.js"></script>
+<script src="snap-capture.js"></script>
+<script src="snap.js"></script>
 <script>
 /* ── 入场界面：鱼眼镜头 + 实时时钟 + 雪花屏激活 + 菜单跳转 ─────────────────────────── */
 (function(){
@@ -934,6 +1060,24 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     lmis.forEach((el, k) => el.classList.toggle('hot', k === sel));
   };
   const showView = mode => document.body.classList.toggle('view-quad', mode === 'panoptic');
+  /* 导航栏直达分栏：未入场则走 CRT 开机+雪花转场，已入场直接切视图（CRUISE=本地卡片墙） */
+  window.__goView = mode => {
+    if(!entered){
+      entered = true;
+      playPowerOn();
+      glitchBurst(560);
+      entry.classList.add('exiting');
+      entry.style.animationDuration = '.56s';
+      setTimeout(() => {
+        entry.style.display = 'none';
+        burstEl.style.display = 'none';
+        document.body.classList.remove('locked');
+        showView(mode);
+      }, 560);
+      return;
+    }
+    showView(mode);
+  };
   const enter = mode => {
     if(entered) return;
     entered = true;
@@ -1471,6 +1615,33 @@ window.addEventListener('DOMContentLoaded', () => {
     if(it) setTimeout(() => openCase(it, window.CATEGORIES.find(c => c.key === it.category)), 600);
   }
 });
+
+/* ── 左侧隐藏导航栏：靠近左缘弹出，悬停选项放大红色高亮，点击跳转对应分栏 ─────────────────────────── */
+(function(){
+  const dock = document.getElementById('dock');
+  const hot = document.getElementById('dockHot');
+  if(!dock || !hot) return;
+  let hideT = null;
+  const openDock = () => { clearTimeout(hideT); dock.classList.add('on'); };
+  const closeDock = () => { hideT = setTimeout(() => dock.classList.remove('on'), 260); };
+  hot.addEventListener('mouseenter', openDock);
+  dock.addEventListener('mouseenter', openDock);
+  dock.addEventListener('mouseleave', closeDock);
+  /* 触屏：点热区直接展开/收起 */
+  hot.addEventListener('click', () => dock.classList.toggle('on'));
+
+  const links = Array.from(dock.querySelectorAll('a[data-nav]'));
+  links.forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    links.forEach(x => x.classList.toggle('hot', x === a));
+    dock.classList.remove('on');
+    const nav = a.dataset.nav;
+    if(nav === 'menu'){ window.backToEntry && window.backToEntry(); }
+    else if(nav === 'cruise' || nav === 'panoptic'){ window.__goView && window.__goView(nav); }
+    else if(nav === 'snap'){ window.__openSnap && window.__openSnap(); }
+    else if(nav === 'time'){ window.openTl && window.openTl(); }
+  }));
+})();
 </script>
 </body>
 </html>
