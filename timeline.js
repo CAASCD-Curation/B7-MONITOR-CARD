@@ -83,5 +83,9 @@
   });
   document.getElementById('tlclose').addEventListener('click', closeTl);
 
+  /* 供左侧导航栏 TIME 项直接打开时间轴；与 SNAP 抓拍面板互斥 */
+  window.openTl = () => { if(window.__closeSnap) window.__closeSnap(); openTl(); };
+  window.closeTl = closeTl;
+
   build();
 })();
