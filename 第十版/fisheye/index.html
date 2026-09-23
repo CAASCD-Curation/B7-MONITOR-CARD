@@ -257,80 +257,166 @@ footer{
 .mend{margin-top:22px; display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.28em; color:#4a4d48}
 
 
-/* ── 拓扑弹窗（右侧独立可关闭，THE COORDINATE 风格） ── */
-.topo{
-  position:fixed; top:0; right:0; bottom:0; z-index:160;
-  width:min(430px,94vw); display:none;
-  background:#0a0d10; border-left:3px solid #23272b;
-  box-shadow:-24px 0 60px rgba(0,0,0,.65);
-  transform:translateX(40px); opacity:0;
-}
-.topo.show{display:block; animation:topo-in .35s steps(6) forwards;}
-@keyframes topo-in{to{transform:none;opacity:1}}
-.topo-head{
-  display:flex; align-items:center; gap:10px; padding:12px 14px;
-  background:#14171a; border-bottom:3px solid #060708;
-}
-.topo-head .rec{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
-.topo-head .code{font-size:12px; letter-spacing:.16em; color:var(--dim);}
-.tclose{
-  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--dim);
-  width:26px; height:26px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
-}
-.tclose:hover{color:var(--ink); border-color:var(--dim)}
-.topo-body{
-  position:relative; height:calc(100% - 47px); overflow:hidden;
-  background-image:radial-gradient(rgba(200,214,200,.13) 1px, transparent 1.5px);
-  background-size:14px 14px;
-}
-.topo-cross-v{
-  position:absolute; left:50%; top:0; bottom:0; width:2px; transform:translateX(-50%);
-  background:linear-gradient(to bottom, rgba(255,120,60,0), rgba(255,140,70,.85) 30%, rgba(255,180,95,1) 50%, rgba(255,140,70,.85) 70%, rgba(255,120,60,0));
-  box-shadow:0 0 16px rgba(255,140,70,.5);
-}
-.topo-cross-h{
-  position:absolute; top:50%; left:0; right:0; height:2px; transform:translateY(-50%);
-  background:linear-gradient(to right, rgba(255,120,60,0), rgba(255,150,80,.75) 30%, rgba(255,180,95,.95) 50%, rgba(255,150,80,.75) 70%, rgba(255,120,60,0));
-  box-shadow:0 0 13px rgba(255,140,70,.45);
-}
-.topo-glow{
-  position:absolute; left:50%; top:50%; width:110px; height:110px; transform:translate(-50%,-50%);
-  border-radius:50%; background:radial-gradient(circle, rgba(255,160,80,.32), transparent 70%);
-  pointer-events:none;
-}
-.tick{position:absolute; transform:translate(-50%,-50%); font-size:12px; color:#545b52; letter-spacing:.08em; pointer-events:none;}
-.tnode{
-  position:absolute; width:5px; height:5px; background:#9fb39f;
-  transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(160,200,160,.35);
-}
-.tnode.active{
-  width:9px; height:9px; background:var(--ink);
-  box-shadow:0 0 0 3px rgba(239,239,231,.14), 9px 0 0 -1px #efefe7, -9px 0 0 -1px #efefe7,
-             0 9px 0 -1px #efefe7, 0 -9px 0 -1px #efefe7, 0 0 22px rgba(242,242,234,.9);
-  animation:node-pulse 1.4s steps(2) infinite;
-}
-@keyframes node-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.55)}}
-.tlabel{
-  position:absolute; transform:translate(-50%,0);
-  font-size:12px; color:var(--ink); text-shadow:1px 1px 0 #000;
-  white-space:nowrap; text-align:center; pointer-events:none; line-height:1.9;
-}
-.tlabel .coord{color:var(--dark); letter-spacing:.1em;}
-.tline{
-  position:absolute; height:1px; transform-origin:left center;
-  background:repeating-linear-gradient(90deg, rgba(239,239,231,.5) 0 5px, transparent 5px 9px);
-  pointer-events:none;
-}
+/* ── 拓扑弹窗 · 右侧独立面板（第八版异格） ── */
 .mtopo{
-  background:none; border:1px solid #2a2d30; color:var(--acc);
-  padding:4px 10px; cursor:pointer; font-size:12px; border-radius:4px; font-family:inherit;
-  letter-spacing:.14em;
+  margin-left:auto; background:none; border:1px solid #2a2d30; color:var(--dim);
+  padding:5px 10px; cursor:pointer; font-size:12px; letter-spacing:.14em; border-radius:4px; font-family:inherit;
 }
-.mtopo:hover{border-color:var(--acc); background:rgba(200,214,192,.08);}
+.mtopo:hover, .mtopo.on{color:var(--ink); border-color:var(--acc); box-shadow:0 0 10px rgba(200,214,192,.18)}
+.mtopo.on{color:#b8543f; border-color:#b8543f; box-shadow:0 0 10px rgba(184,84,63,.35)}
+.mtime{
+  margin-left:8px; background:none; border:1px solid #2a2d30; color:var(--dim);
+  padding:5px 10px; cursor:pointer; font-size:12px; letter-spacing:.14em; border-radius:4px; font-family:inherit;
+}
+.mtime:hover, .mtime.on{color:var(--ink); border-color:var(--acc); box-shadow:0 0 10px rgba(200,214,192,.18)}
+.mtime.on{color:#b8543f; border-color:#b8543f; box-shadow:0 0 10px rgba(184,84,63,.35)}
+.topo{
+  position:fixed; top:0; right:0; bottom:0; z-index:220; width:440px;
+  display:none; flex-direction:column;
+  background:var(--panel); border-left:1px solid #000;
+  box-shadow:-24px 0 60px rgba(0,0,0,.7), inset 1px 0 0 rgba(255,255,255,.06);
+  animation:topo-in .32s cubic-bezier(.2,.8,.3,1) both;
+}
+.topo.show{display:flex}
+@keyframes topo-in{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+.ttitlebar{
+  flex:none; display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:#14171a; border-bottom:3px solid #060708;
+}
+.ttitlebar .rec{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(184,84,63,.9);animation:led 1.4s steps(1) infinite}
+.ttitlebar .tcode{font-size:12px; letter-spacing:.16em; color:var(--dim)}
+.ttitlebar .mclose{margin-left:auto}
+.tplot{
+  position:relative; flex:1; margin:14px; overflow:hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse 80% 70% at 50% 45%, rgba(200,214,192,.03), transparent 70%),
+    #0b0d0f;
+  border:1px solid #1c2023; border-radius:4px;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+}
+.tplot::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 3px);
+}
+#tsvg{position:absolute; inset:0; width:100%; height:100%}
+.tlabel{
+  position:absolute; z-index:6; font-size:12px; letter-spacing:.18em; line-height:1.8;
+  color:#5a5f59; text-shadow:1px 1px 0 #000; pointer-events:none; text-align:center;
+}
+.tlab-l{left:10px; top:50%; transform:translateY(-50%); text-align:left}
+.tlab-r{right:10px; top:50%; transform:translateY(-50%); text-align:right}
+.tlab-t{top:8px; left:50%; transform:translateX(-50%)}
+.tlab-b{bottom:8px; left:50%; transform:translateX(-50%)}
+.tnodes{position:absolute; inset:0; z-index:5}
+/* 空心方框节点 */
+.tnode{
+  position:absolute; width:13px; height:13px; padding:0;
+  transform:translate(-50%,-50%);
+  background:transparent; border:1px solid var(--dark); border-radius:1px;
+  cursor:pointer; transition:border-color .2s, box-shadow .2s;
+}
+.tnode:hover{border-color:var(--ink); box-shadow:0 0 8px rgba(239,239,231,.35); z-index:8}
+.tnode.on{
+  border-color:#ff3030; z-index:9;
+  box-shadow:0 0 10px rgba(255,48,48,.75), inset 0 0 4px rgba(255,48,48,.6);
+  animation:node-blink 1.2s steps(1) infinite;
+}
+@keyframes node-blink{0%,100%{opacity:1}50%{opacity:.55}}
+/* 高亮节点的档案名称标签 */
+.tnode .tname{
+  position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  display:none; white-space:nowrap; padding:4px 9px;
+  background:#14171a; border:1px solid #b8543f; border-radius:3px;
+  color:var(--ink); font-size:12px; letter-spacing:.1em; font-family:inherit;
+  text-shadow:1px 1px 0 #000; box-shadow:0 0 14px rgba(184,84,63,.4);
+  pointer-events:none;
+}
+.tnode .tname::after{
+  content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  border:4px solid transparent; border-top-color:#b8543f;
+}
+.tnode.on .tname{display:block}
+#tsvg line.hl-path{stroke:#c8d6c0 !important; stroke-opacity:.6; stroke-dasharray:none; filter:drop-shadow(0 0 3px rgba(200,214,192,.7))}
+.tfoot{
+  flex:none; padding:9px 14px; font-size:12px; letter-spacing:.2em; color:#4a4d48;
+  border-top:1px solid #1c2023; background:#0d0f11;
+}
+/* 拓扑打开时：左侧档案弹窗避让，两窗同屏 */
+.modal.topo-on{justify-content:flex-start; padding-left:max(16px, calc((100vw - 1330px) / 2))}
+@media(max-width:760px){
+  .topo{width:100vw}
+  .modal.topo-on{padding-left:16px}
+}
 
-/* 拓扑打开时左弹窗左移，双窗口互不遮挡 */
-#mbox{transition:margin .45s cubic-bezier(.2,.7,.3,1)}
-body.topo-on #mbox{margin-right:min(430px,94vw)}
+/* 时间线弹窗 · 右侧独立可关闭面板（拓扑旁边） */
+.tl{
+  position:fixed; top:0; right:0; bottom:0; z-index:224; width:400px;
+  display:none; flex-direction:column;
+  background:var(--panel); border-left:1px solid #000;
+  box-shadow:-24px 0 60px rgba(0,0,0,.7), inset 1px 0 0 rgba(255,255,255,.06);
+  animation:topo-in .32s cubic-bezier(.2,.8,.3,1) both;
+}
+.tl.show{display:flex}
+/* 与时间线同开时：时间线靠最右，拓扑面板左移让位 */
+.topo.tl-on{right:400px}
+.tlbody{
+  position:relative; flex:1; margin:14px; overflow-y:auto;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    #0b0d0f;
+  border:1px solid #1c2023; border-radius:4px;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+  padding:18px 12px 18px 0;
+}
+.tlbody::-webkit-scrollbar{width:10px}
+.tlbody::-webkit-scrollbar-thumb{background:#23272a;border:2px solid #0b0d0f}
+/* 竖向时间轴轴线 */
+.tlbody::before{
+  content:""; position:absolute; top:0; bottom:0; left:64px; width:1px;
+  background:linear-gradient(to bottom, transparent, #3a3e42 8%, #3a3e42 92%, transparent);
+}
+/* 时间轴条目 */
+.tl-item{
+  position:relative; display:flex; align-items:center; gap:10px; width:100%;
+  padding:7px 10px 7px 0; background:none; border:0; cursor:pointer;
+  font-family:inherit; text-align:left; color:var(--ink);
+}
+.tl-item:hover{background:rgba(200,214,192,.05)}
+.tl-item .yr{
+  flex:none; width:44px; text-align:right; font-size:12px; letter-spacing:.06em;
+  color:var(--dark); text-shadow:1px 1px 0 #000;
+}
+.tl-item .mk{
+  flex:none; width:9px; height:9px; margin-left:6px;
+  border:1px solid var(--dark); border-radius:1px; background:transparent;
+  box-shadow:0 0 0 3px #0b0d0f; transition:border-color .2s, box-shadow .2s;
+}
+.tl-item:hover .mk{border-color:var(--ink)}
+.tl-item .tx{
+  font-size:12px; letter-spacing:.08em; color:#b9bcb4; text-shadow:1px 1px 0 #000;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tl-item .ct{font-size:11px; color:#4a4d48; margin-left:6px; letter-spacing:.06em}
+.tl-item.on .mk{border-color:#ff3030; box-shadow:0 0 0 3px #0b0d0f, 0 0 8px rgba(255,48,48,.8); animation:node-blink 1.2s steps(1) infinite}
+.tl-item.on .tx{color:var(--ink)}
+.tl-item.on .yr{color:#d98d80}
+/* 年份不详分组 */
+.tl-na{
+  position:relative; margin:14px 0 6px; padding:6px 10px 6px 0;
+  font-size:12px; letter-spacing:.22em; color:#4a4d48; text-shadow:1px 1px 0 #000;
+  display:flex; align-items:center; gap:10px;
+}
+.tl-na::before{content:""; flex:none; width:44px}
+.tl-na i{flex:none; width:9px; height:9px; margin-left:6px; border:1px dashed #2a2d30; box-shadow:0 0 0 3px #0b0d0f}
+/* 双浮窗打开时档案弹窗避让 */
+.modal.topo-on.tl-on{padding-left:max(16px, calc((100vw - 1760px) / 2))}
+.modal.tl-on:not(.topo-on){justify-content:flex-start; padding-left:max(16px, calc((100vw - 1300px) / 2))}
+@media(max-width:760px){
+  .tl{width:100vw}
+  .topo.tl-on{right:0; z-index:219}
+  .modal.topo-on.tl-on, .modal.tl-on:not(.topo-on){padding-left:16px}
+}
 
 /* ── PANOPTIC 四象限图 ─────────────────────────── */
 #quad{
@@ -493,48 +579,33 @@ body.locked .menu-btn, body.view-quad .menu-btn{display:none;}
 /* 象限图顶栏为 OSD 时钟让位 */
 body.view-quad .quad-head{padding-left:clamp(220px, 25vw, 330px)}
 #fisheyeCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:0}
-#lensCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:1}
-.lens-hud{
-  position:absolute; top:15.5%; left:16%; z-index:5;
-  display:flex; flex-direction:column; gap:7px;
-  font-size:clamp(10px,1.5vmin,14px); letter-spacing:.18em; color:#d8dcd6;
-  text-shadow:1px 1px 0 rgba(0,0,0,.9);
-}
-.lens-clock{display:flex; align-items:center; gap:10px}
-.lens-clock .rec{width:8px;height:8px;border-radius:50%;background:#e0483a;box-shadow:0 0 8px rgba(224,72,58,.9);animation:led 1.1s steps(1) infinite}
-.lens-cam{font-size:clamp(8px,1.15vmin,10px); color:#7d8078; letter-spacing:.26em}
-.lens-title{position:absolute; top:37%; left:0; right:0; height:23%; z-index:4}
-#titleCanvas{width:100%; height:100%; display:block}
-.lens-sub{
-  position:absolute; top:64%; left:0; right:0; z-index:4; text-align:center;
-  font-size:clamp(10px,1.6vmin,14px); letter-spacing:.6em; color:#8a8d88;
-  text-shadow:1px 1px 0 rgba(0,0,0,.9);
-}
 .lens-menu{
-  position:absolute; right:12%; top:22%; z-index:6;
-  display:flex; flex-direction:column; gap:20px;
-  opacity:0; transform:translateX(26px); pointer-events:none;
+  position:absolute; right:max(3.2vw,26px); top:50%; z-index:6;
+  display:flex; flex-direction:column; gap:26px; align-items:flex-end;
+  opacity:0; transform:translateY(-50%) translateX(26px); pointer-events:none;
   transition:opacity .25s steps(5), transform .25s steps(5);
 }
-.lens-menu.on{opacity:1; transform:none; pointer-events:auto}
+.lens-menu.on{opacity:1; transform:translateY(-50%); pointer-events:auto}
 .lmi{
-  font-size:clamp(13px,2vmin,17px); letter-spacing:.24em; color:#a6aaa3;
-  border:1px solid rgba(255,255,255,.08); padding:12px 20px;
-  background:rgba(0,0,0,.25);
-  transition:transform .12s steps(4), color .12s steps(4),
-             border-color .12s steps(4), background .12s steps(4);
+  font-size:clamp(14px,2.2vmin,19px); letter-spacing:.26em; color:#8a8d88;
+  padding:6px 0; border:none; background:none; text-align:right;
+  transform-origin:right center;
+  transition:transform .12s steps(4), color .12s steps(4), text-shadow .12s steps(4);
 }
 .lmi.hot{
-  transform:scale(1.15); color:#fff; border-color:rgba(224,72,58,.75);
-  background:rgba(224,72,58,.10); transform-origin:left center;
+  transform:scale(1.2); color:#fff;
+  text-shadow:0 0 14px rgba(224,72,58,.95), 2px 0 rgba(224,72,58,.85), -2px 0 rgba(224,72,58,.55);
 }
-.lens-hint{
-  position:absolute; bottom:11%; left:0; right:0; z-index:5; text-align:center;
-  font-size:clamp(10px,1.5vmin,13px); letter-spacing:.34em; color:#8a8d88;
-  animation:lens-hint-blink 1.6s steps(2) infinite;
-  text-shadow:1px 1px 0 rgba(0,0,0,.9);
+/* 竖屏/窄屏：选项移至镜头下方黑色背景，水平排列 */
+@media(max-width:700px){
+  .lens-menu{
+    right:auto; left:50%; top:auto; bottom:4.5vh;
+    flex-direction:row; gap:30px; align-items:center;
+    transform:translateX(-50%) translateY(20px);
+  }
+  .lens-menu.on{transform:translateX(-50%)}
+  .lmi{transform-origin:center bottom; text-align:center}
 }
-@keyframes lens-hint-blink{0%,60%{opacity:1}61%,100%{opacity:.25}}
 /* 入场退出：雪花噪点过渡 */
 .entry.exiting{animation:entry-exit-snow .85s steps(6) both}
 @keyframes entry-exit-snow{
@@ -544,11 +615,42 @@ body.view-quad .quad-head{padding-left:clamp(220px, 25vw, 330px)}
   60%{opacity:.9; filter:brightness(2)}
   100%{opacity:0; visibility:hidden; filter:brightness(3) contrast(2)}
 }
-#snowCanvas{
-  position:fixed; inset:0; z-index:400; display:none;
-  width:100vw; height:100vh;
-  image-rendering:pixelated; image-rendering:crisp-edges;
+/* ── 雪花故障闪动（全屏转场，同第八版） ─────────────────── */
+.glitch-burst{
+  position:fixed; inset:0; z-index:450; background:#050606; overflow:hidden;
+  animation:burst-in .05s steps(1) both;
 }
+.glitch-burst .gnoise{
+  position:absolute; inset:-40px;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.08) 0 2px, transparent 2px 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:burst-noise .09s steps(2) infinite;
+}
+@keyframes burst-noise{
+  0%{transform:translate(0,0);filter:contrast(1.4)}
+  25%{transform:translate(-30px,18px);filter:contrast(2) invert(.08)}
+  50%{transform:translate(24px,-26px);filter:contrast(1.1) brightness(1.3)}
+  75%{transform:translate(-14px,-12px);filter:contrast(1.8) invert(.15)}
+  100%{transform:translate(10px,20px);filter:contrast(1.4)}
+}
+.glitch-burst .gband{
+  position:absolute; left:0; right:0; height:22%; top:30%;
+  background:linear-gradient(to bottom, transparent, rgba(242,242,234,.16), transparent);
+  animation:burst-band .12s steps(3) infinite; mix-blend-mode:screen;
+}
+@keyframes burst-band{0%{top:8%}33%{top:52%}66%{top:74%}100%{top:20%}}
+.glitch-burst .gtext{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  color:rgba(242,242,234,.85); font-size:clamp(12px,2vw,24px); letter-spacing:.5em;
+  text-shadow:2px 0 rgba(184,84,63,.8), -2px 0 rgba(120,160,200,.8);
+  animation:burst-text .1s steps(2) infinite;
+}
+@keyframes burst-text{
+  0%,100%{opacity:1;transform:translate(-50%,-50%) skewX(0)}
+  50%{opacity:.55;transform:translate(calc(-50% + 4px),-50%) skewX(-4deg)}
+}
+@keyframes burst-in{from{opacity:0}to{opacity:1}}
 body.locked{overflow:hidden}
 
 /* ── 红点监控闪烁光标（监控头瞄准） ─────────────────────────── */
@@ -558,6 +660,102 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   pointer-events:none;
   image-rendering:pixelated; image-rendering:crisp-edges;
 }
+
+/* ── 左侧隐藏导航栏：鼠标靠近左缘弹出；选项悬停放大+红色高亮 ─────────────────────────── */
+.dock-hot{
+  position:fixed; left:0; top:0; bottom:0; width:16px; z-index:9490;
+}
+.dock{
+  position:fixed; left:0; top:0; bottom:0; z-index:9491;
+  width:clamp(220px,23vw,280px);
+  display:flex; flex-direction:column;
+  padding:76px 0 20px;
+  background:rgba(8,10,12,.96);
+  border-right:1px solid #23272b;
+  box-shadow:18px 0 60px rgba(0,0,0,.6), inset -1px 0 0 rgba(255,255,255,.04);
+  transform:translateX(-103%);
+  transition:transform .34s cubic-bezier(.2,.8,.3,1);
+  pointer-events:none;
+}
+.dock.on{transform:none; pointer-events:auto;}
+.dock-brand{
+  flex:none; padding:0 26px 14px; font-size:12px; letter-spacing:.34em; color:#4a4d48;
+  border-bottom:1px solid #1a1d20; margin:0 0 12px;
+}
+.dock-brand b{color:var(--red); font-weight:400;}
+.dock a{
+  display:flex; align-items:baseline; gap:10px;
+  margin:3px 12px; padding:13px 16px;
+  font-size:14px; letter-spacing:.2em; color:var(--dim); text-decoration:none;
+  border:1px solid transparent; border-left:3px solid transparent;
+  transform-origin:left center;
+  transition:transform .18s cubic-bezier(.2,.8,.3,1), color .18s, background .18s,
+             border-color .18s, letter-spacing .18s, text-shadow .18s;
+}
+.dock a small{font-size:11px; letter-spacing:.3em; color:#4a4d48; transition:inherit;}
+/* 悬停 / 当前分栏：放大 + 红色高亮 */
+.dock a:hover, .dock a.hot{
+  transform:scale(1.13);
+  color:#e0483a;
+  background:rgba(224,72,58,.08);
+  border-color:rgba(224,72,58,.55); border-left-color:#e0483a;
+  letter-spacing:.3em;
+  text-shadow:0 0 14px rgba(224,72,58,.5);
+}
+.dock a:hover small, .dock a.hot small{color:#e0483a;}
+.dock-foot{
+  flex:none; margin-top:auto; padding:12px 26px 0;
+  font-size:10px; letter-spacing:.26em; color:#3a3d38;
+  border-top:1px solid #1a1d20;
+}
+
+/* ── SNAP 抓拍面板 · 右侧独立可关闭面板 ─────────────────────────── */
+.snap{
+  position:fixed; top:0; right:0; bottom:0; z-index:226; width:400px;
+  display:none; flex-direction:column;
+  background:var(--panel); border-left:1px solid #000;
+  box-shadow:-24px 0 60px rgba(0,0,0,.7), inset 1px 0 0 rgba(255,255,255,.06);
+  animation:topo-in .32s cubic-bezier(.2,.8,.3,1) both;
+}
+.snap.show{display:flex}
+.snapbody{
+  flex:1; margin:14px; overflow-y:auto;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px), #0b0d0f;
+  border:1px solid #1c2023; border-radius:4px;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+  padding:14px;
+}
+.snap-btn{
+  display:block; width:100%; padding:14px; font-family:inherit; font-size:13px; letter-spacing:.24em;
+  background:rgba(224,72,58,.1); color:#e0483a; border:1px solid rgba(224,72,58,.6); border-radius:3px;
+  transition:background .18s, transform .18s, box-shadow .18s;
+}
+.snap-btn:hover{background:rgba(224,72,58,.2); transform:scale(1.03); box-shadow:0 0 18px rgba(224,72,58,.3);}
+.snap-btn:disabled{opacity:.45; transform:none; box-shadow:none;}
+.snap-hintline{margin:10px 2px 14px; font-size:10px; letter-spacing:.2em; color:#4a4d48;}
+.snapgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.snapitem{position:relative; border:1px solid #23272b; background:#000;}
+.snapitem img{display:block; width:100%; height:auto; image-rendering:pixelated;}
+.snapitem:hover{border-color:#e0483a;}
+.snapitem .si-time{
+  position:absolute; left:0; right:0; bottom:0; padding:3px 6px;
+  font-size:9px; letter-spacing:.12em; color:var(--ink);
+  background:rgba(5,6,7,.82); text-shadow:1px 1px 0 #000;
+}
+.snapitem .si-del{
+  position:absolute; top:2px; right:2px; width:18px; height:18px; line-height:16px;
+  text-align:center; background:rgba(5,6,7,.85); color:#b8543f;
+  border:1px solid rgba(184,84,63,.6); font-size:10px;
+}
+.snapitem .si-del:hover{background:#b8543f; color:#0b0d0f;}
+.snap-empty{grid-column:1/-1; padding:26px 10px; text-align:center; font-size:11px; letter-spacing:.22em; color:#3a3d38;}
+/* 快门闪光 */
+.snap-flash{position:fixed; inset:0; z-index:9700; pointer-events:none; background:#f4f4ec; opacity:0;}
+.snap-flash.go{animation:snapflash .5s steps(4) both;}
+@keyframes snapflash{0%{opacity:.95}100%{opacity:0}}
+/* 抓拍瞬间：隐藏自定义光标/导航/面板，避免入镜 */
+body.snapping #eyeLayer, body.snapping .dock, body.snapping .dock-hot,
+body.snapping .snap, body.snapping .snap-flash{display:none !important;}
 </style>
 </head>
 <body class="flicker-all">
@@ -566,24 +764,33 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
 <div class="scan-global"></div>
 <div class="osd-clock" id="clock">----年--月--日 星期- --:--:--</div>
 
+<!-- 左侧隐藏导航栏：鼠标靠近左缘弹出 -->
+<div class="dock-hot" id="dockHot" aria-hidden="true"></div>
+<nav class="dock" id="dock" aria-label="分栏导航">
+  <div class="dock-brand">B10 <b>·</b> MONITOR</div>
+  <a data-nav="menu" class="hot" href="#menu">MENU<small>主界面</small></a>
+  <a data-nav="cruise" href="#cruise">CRUSIE<small>自动轮巡</small></a>
+  <a data-nav="panoptic" href="#panoptic">PANOPTIC<small>全景</small></a>
+  <a data-nav="snap" href="#snap">SNAP<small>抓拍</small></a>
+  <a data-nav="time" href="#time">TIME<small>时间轴</small></a>
+  <div class="dock-foot">◄ NAV — 移开光标自动收起</div>
+</nav>
+
 <!-- 入场界面：鱼眼监控镜头 -->
 <div class="entry" id="entry" role="button" aria-label="进入监控室档案">
   <div class="lens" id="lens">
     <canvas id="fisheyeCanvas" aria-hidden></canvas>
-    <canvas id="lensCanvas" aria-hidden></canvas>
-    <div class="lens-hud">
-      <div class="lens-cam">CAM-88&nbsp;&nbsp;·&nbsp;&nbsp;FISHEYE&nbsp;&nbsp;·&nbsp;&nbsp;SIGNAL LIVE</div>
-    </div>
-    <div class="lens-title"><canvas id="titleCanvas"></canvas></div>
-    <div class="lens-sub">SURVEILLANCE&nbsp;&nbsp;&nbsp;ARCHIVE</div>
-    <nav class="lens-menu" id="lensMenu" aria-label="入场菜单">
-      <div class="lmi hot" data-mode="cruise">&gt;&gt;&nbsp; ENTER进入</div>
-      <div class="lmi" data-mode="exit">&nbsp;&nbsp;&nbsp;&nbsp; ESC返回</div>
-    </nav>
-    <div class="lens-hint" id="lensHint">点击任意处激活 · CLICK ANYWHERE</div>
   </div>
+  <nav class="lens-menu" id="lensMenu" aria-label="入场菜单">
+    <div class="lmi hot" data-mode="cruise">&gt;&gt;&nbsp; ENTER进入</div>
+    <div class="lmi" data-mode="exit">&nbsp;&nbsp;&nbsp;&nbsp; ESC返回</div>
+  </nav>
 </div>
-<canvas id="snowCanvas" aria-hidden></canvas>
+<div class="glitch-burst" id="burst" style="display:none" aria-hidden>
+  <div class="gnoise"></div>
+  <div class="gband"></div>
+  <div class="gtext">SIGNAL INTERRUPTED</div>
+</div>
 
 <header>
   <h1>监控室<span class="en">MONITOR ROOM · B10</span></h1>
@@ -641,7 +848,8 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
       <div class="mtitlebar">
         <span class="rec"></span>
         <span class="code" id="mcode"></span>
-        <button type="button" class="mtopo">&#x2316; TOPO</button>
+        <button type="button" class="mtopo" id="mtopo" aria-label="打开素材拓扑">▣ TOPO 拓扑</button>
+        <button type="button" class="mtime" id="mtime" aria-label="打开素材时间线">◷ TIMELINE 时间线</button>
         <button type="button" class="mclose" id="mclose" aria-label="关闭">&#10005;</button>
       </div>
       <div class="mbody">
@@ -657,24 +865,62 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
 </div>
 
 
-<!-- 拓扑弹窗（右侧独立，可单独关闭） -->
-<aside class="topo" id="topo" role="dialog" aria-label="分类拓扑">
-  <div class="topo-head">
+<!-- 拓扑弹窗 · 右侧独立可关闭面板 -->
+<div class="topo" id="topo" role="dialog" aria-label="素材拓扑">
+  <div class="ttitlebar">
     <span class="rec"></span>
-    <span class="code" id="tcode">THE COORDINATE</span>
-    <button type="button" class="tclose" id="tclose" aria-label="关闭拓扑">&#10005;</button>
+    <span class="tcode">TOPOLOGY MAP · 素材拓扑</span>
+    <button type="button" class="mclose" id="tclose" aria-label="关闭拓扑">✕</button>
   </div>
-  <div class="topo-body" id="tbody"></div>
-</aside>
+  <div class="tplot" id="tplot">
+    <svg id="tsvg" aria-hidden="true" preserveAspectRatio="none"></svg>
+    <span class="tlabel tlab-l">现实实体空间<br>REAL SPACE</span>
+    <span class="tlabel tlab-r">虚拟叙事空间<br>VIRTUAL SPACE</span>
+    <span class="tlabel tlab-t">客观纪实素材<br>DOCUMENTARY</span>
+    <span class="tlabel tlab-b">艺术思辨意象<br>CONTEMPLATIVE</span>
+    <div class="tnodes" id="tnodes"></div>
+  </div>
+  <div class="tfoot">X · 空间形态 — Y · 素材属性 / 点击方框节点切换左侧档案</div>
+</div>
+
+<!-- 时间线弹窗 · 右侧独立可关闭面板 -->
+<div class="tl" id="tl" role="dialog" aria-label="素材时间线">
+  <div class="ttitlebar">
+    <span class="rec"></span>
+    <span class="tcode">TIMELINE · 素材时间线</span>
+    <button type="button" class="mclose" id="tlclose" aria-label="关闭时间线">✕</button>
+  </div>
+  <div class="tlbody" id="tlbody"></div>
+  <div class="tfoot">按年份排序 — 点击条目跳转档案详情</div>
+</div>
+
+<!-- 抓拍快照面板 · 右侧独立可关闭面板 -->
+<div class="snap" id="snap" role="dialog" aria-label="抓拍快照">
+  <div class="ttitlebar">
+    <span class="rec"></span>
+    <span class="tcode">SNAP · 抓拍快照</span>
+    <button type="button" class="mclose" id="snapclose" aria-label="关闭抓拍">✕</button>
+  </div>
+  <div class="snapbody">
+    <button type="button" id="snapBtn" class="snap-btn">◉ CAPTURE · 抓拍当前画面</button>
+    <div class="snap-hintline">快门一闪自动下载全图 PNG · 相册仅存本机缩略预览</div>
+    <div class="snapgrid" id="snapGrid"></div>
+  </div>
+  <div class="tfoot" id="snapStatus">READY — 等待抓拍</div>
+</div>
+<div class="snap-flash" id="snapFlash" aria-hidden="true"></div>
 
 <script src="data.js"></script>
+<script src="topology.js"></script>
+<script src="timeline.js"></script>
+<script src="snap-capture.js"></script>
+<script src="snap.js"></script>
 <script>
 /* ── 入场界面：鱼眼镜头 + 实时时钟 + 雪花屏激活 + 菜单跳转 ─────────────────────────── */
 (function(){
   const entry = document.getElementById('entry');
   const lens = document.getElementById('lens');
   const menu = document.getElementById('lensMenu');
-  const hint = document.getElementById('lensHint');
   document.body.classList.add('locked');
 
   /* 网页左上角 OSD 实时时间（参考监控 OSD：年月日 星期 时分秒） */
@@ -688,91 +934,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   };
   tick(); setInterval(tick, 250);
 
-  /* 镜头球面经纬线（同心弧 + 弯曲经纬，营造鱼眼纵深） */
-  const lc = document.getElementById('lensCanvas');
-  const lctx = lc.getContext('2d');
-  let LW = 0, LH = 0;
-  const lensSize = () => {
-    const r = lens.getBoundingClientRect();
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    LW = r.width; LH = r.height;
-    lc.width = Math.round(LW * dpr); lc.height = Math.round(LH * dpr);
-    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-  lensSize(); addEventListener('resize', lensSize);
-  const dust = [];
-  for(let i = 0; i < 42; i++) dust.push({ a: Math.random() * Math.PI * 2, r: 0.12 + Math.random() * 0.38, s: 0.0004 + Math.random() * 0.0012, sz: Math.random() < 0.22 ? 2 : 1 });
-  (function lensLoop(){
-    lctx.clearRect(0, 0, LW, LH);
-    const cx = LW / 2, cy = LH * 0.52, R = Math.min(LW, LH) / 2;
-    lctx.lineWidth = 1;
-    /* 同心椭圆弧（纬线） */
-    const lats = [0.28, 0.52, 0.74, 0.9];
-    lats.forEach((f, i) => {
-      lctx.strokeStyle = 'rgba(255,255,255,' + (0.085 - i * 0.012) + ')';
-      lctx.beginPath();
-      lctx.ellipse(cx, cy, R * f, R * f * (0.42 + f * 0.32), 0, 0, Math.PI * 2);
-      lctx.stroke();
-    });
-    /* 弯曲经线（二次曲线收向上下极点，纵深感） */
-    for(let i = -3; i <= 3; i++){
-      const bx = cx + i * R * 0.26;
-      lctx.strokeStyle = 'rgba(255,255,255,' + (i === 0 ? 0.11 : 0.07) + ')';
-      lctx.beginPath();
-      lctx.moveTo(bx, cy - R * 0.96);
-      lctx.quadraticCurveTo(cx + i * R * 0.10, cy, bx, cy + R * 0.96);
-      lctx.stroke();
-    }
-    /* 轨道尘埃 */
-    const t = performance.now();
-    for(const p of dust){
-      p.a += p.s;
-      const x = cx + Math.cos(p.a) * R * p.r * 1.9;
-      const y = cy + Math.sin(p.a) * R * p.r * 0.62;
-      const tw = Math.floor(t / 480 + p.a * 7) % 3;
-      lctx.fillStyle = 'rgba(255,255,255,' + (tw === 0 ? 0.22 : 0.08) + ')';
-      lctx.fillRect(Math.round(x), Math.round(y), p.sz, p.sz);
-    }
-    requestAnimationFrame(lensLoop);
-  })();
 
-  /* 鱼眼畸变标题：离屏绘制「监控室」→ 按竖条采样做桶形隆起 */
-  const tc = document.getElementById('titleCanvas');
-  const tctx = tc.getContext('2d');
-  const off = document.createElement('canvas');
-  const octx = off.getContext('2d');
-  const drawTitle = () => {
-    const r = tc.getBoundingClientRect();
-    if(r.width < 10) return;
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    tc.width = Math.round(r.width * dpr); tc.height = Math.round(r.height * dpr);
-    tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    off.width = tc.width; off.height = tc.height;
-    const fs = Math.round(r.height * 0.52);
-    octx.setTransform(1, 0, 0, 1, 0, 0);
-    octx.clearRect(0, 0, off.width, off.height);
-    octx.font = '800 ' + fs + 'px "Fusion Pixel", monospace';
-    octx.textAlign = 'center'; octx.textBaseline = 'middle';
-    const tx = off.width / 2, ty = off.height / 2 + fs * 0.04;
-    octx.fillStyle = 'rgba(224,72,58,.55)';            /* 红色重影（监控色散） */
-    octx.fillText('监控室', tx - fs * 0.045, ty);
-    octx.fillText('监控室', tx + fs * 0.045, ty);
-    octx.fillStyle = '#f2f2ea';                        /* 主字 + 像素投影 */
-    octx.shadowColor = 'rgba(0,0,0,.9)'; octx.shadowOffsetX = 3; octx.shadowOffsetY = 3;
-    octx.fillText('监控室', tx, ty);
-    octx.shadowColor = 'transparent';
-    /* 桶形畸变：每 2px 竖条按离镜头中心距离隆起（中间高、边缘压扁） */
-    tctx.clearRect(0, 0, r.width, r.height);
-    const step = 2 * dpr;
-    for(let x = 0; x < off.width; x += step){
-      const n = (x + step / 2) / off.width * 2 - 1;    /* -1..1 */
-      const k = 1 + 0.72 * (1 - n * n);                /* 中心放大 1.72x，边缘收缩 */
-      const sh = off.height * k;
-      tctx.drawImage(off, x, 0, step, off.height, x / dpr, (r.height - sh / dpr) / 2, step / dpr, sh / dpr);
-    }
-  };
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawTitle);
-  addEventListener('resize', drawTitle);
 
   /* ── 入场遮罩背景：随机档案图 + 模糊 + Canvas 实时鱼眼球面畸变 ───────────────────────────
      畸变强度可调：URL 参数 ?fisheye=0~1（默认 0.35）；每次刷新随机选图 */
@@ -879,49 +1041,14 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
   let feTimer = 0;
   addEventListener('resize', () => { clearTimeout(feTimer); feTimer = setTimeout(renderFisheye, 200); });
 
-  /* 全屏 CRT 雪花噪点故障屏：随机黑白彩噪颗粒 + 扫描横线 + 色偏分离 + 行撕裂 */
-  const sc = document.getElementById('snowCanvas');
-  const sctx = sc.getContext('2d');
-  sctx.imageSmoothingEnabled = false;
-  const snowBurst = (dur, done) => {
-    const DUR = dur || 780;
-    sc.width = Math.ceil(innerWidth / 3); sc.height = Math.ceil(innerHeight / 3);
-    sc.style.display = 'block';
-    const t0 = performance.now();
-    const step = () => {
-      const w = sc.width, h = sc.height;
-      const img = sctx.createImageData(w, h);
-      const d = img.data;
-      const bandY = ((performance.now() * 0.35) | 0) % h;   /* 滚动亮带 */
-      const tearY = (Math.random() * h) | 0, tearD = ((Math.random() * 30) | 0) - 15; /* 撕裂行偏移 */
-      for(let y = 0; y < h; y++){
-        const scan = (y % 3 === 0) ? 0.5 : 1;               /* 扫描暗线 */
-        const band = Math.abs(y - bandY) < 5 ? 1.6 : 1;
-        const tear = Math.abs(y - tearY) < 8 ? tearD : 0;
-        for(let x = 0; x < w; x++){
-          const i = (y * w + x) * 4;
-          const v = Math.random();
-          let r, g2, b;
-          if(v < 0.014){                                      /* 彩色噪点 */
-            r = 60 + Math.random() * 195; g2 = Math.random() * 150; b = 60 + Math.random() * 195;
-          }else{                                              /* 黑白噪 */
-            g2 = Math.random() < 0.5 ? 225 + Math.random() * 30 : Math.random() * 85;
-            r = g2; b = g2;
-          }
-          if(Math.random() < 0.035){                          /* 色偏分离：随机通道错位脉冲 */
-            const dv = 40 + Math.random() * 70;
-            if(Math.random() < 0.5) r = Math.min(255, r + dv); else b = Math.min(255, b + dv);
-            if(tear) g2 = Math.min(255, g2 + dv * 0.5);
-          }
-          const m = scan * band;
-          d[i] = r * m; d[i + 1] = g2 * m; d[i + 2] = b * m; d[i + 3] = 255;
-        }
-      }
-      sctx.putImageData(img, 0, 0);
-      if(performance.now() - t0 < DUR) requestAnimationFrame(step);
-      else { sc.style.display = 'none'; done && done(); }
-    };
-    requestAnimationFrame(step);
+  /* ── 全屏雪花故障闪动转场（同第八版）：噪点抖动 + 扫描亮带 + SIGNAL INTERRUPTED ── */
+  const burstEl = document.getElementById('burst');
+  const glitchBurst = (dur, done) => {
+    burstEl.style.display = 'block';
+    setTimeout(() => {
+      burstEl.style.display = 'none';
+      done && done();
+    }, dur || 560);
   };
 
   /* 激活与菜单选择 */
@@ -933,26 +1060,49 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     lmis.forEach((el, k) => el.classList.toggle('hot', k === sel));
   };
   const showView = mode => document.body.classList.toggle('view-quad', mode === 'panoptic');
+  /* 导航栏直达分栏：未入场则走 CRT 开机+雪花转场，已入场直接切视图（CRUISE=本地卡片墙） */
+  window.__goView = mode => {
+    if(!entered){
+      entered = true;
+      playPowerOn();
+      glitchBurst(560);
+      entry.classList.add('exiting');
+      entry.style.animationDuration = '.56s';
+      setTimeout(() => {
+        entry.style.display = 'none';
+        burstEl.style.display = 'none';
+        document.body.classList.remove('locked');
+        showView(mode);
+      }, 560);
+      return;
+    }
+    showView(mode);
+  };
   const enter = mode => {
     if(entered) return;
     entered = true;
     playPowerOn();
-    snowBurst(860);                 /* CRT 雪花故障屏覆盖整个跳转过程 */
+    glitchBurst(560);                /* 同第八版 560ms */
     entry.classList.add('exiting');
+    entry.style.animationDuration = '.56s';  /* 退出动画与转场同步 */
     setTimeout(() => {
+      if(mode === 'cruise'){
+        /* CRUISE：跳转第八版异格卡片界面（?view=cards 跳过其入场直达屏幕墙） */
+        location.href = '../../第八版异格/?view=cards';
+        return;
+      }
       entry.style.display = 'none';
-      sc.style.display = 'none';
+      burstEl.style.display = 'none';
       document.body.classList.remove('locked');
       showView(mode);
-    }, 860);
+    }, 560);
   };
   /* 点击任意处：先雪花屏爆发，再浮现右侧选项 */
   entry.addEventListener('click', () => {
     if(entered) return;
     if(!activated){
       activated = true;
-      hint.style.display = 'none';
-      snowBurst(780, () => menu.classList.add('on'));
+      glitchBurst(560, () => menu.classList.add('on'));  /* 同第八版 560ms */
       return;
     }
   });
@@ -990,9 +1140,7 @@ html,body,a,button,[role="button"],.lmi,.qmenu,.menu-btn,#quadCanvas,.qcard.on{c
     entry.style.display = '';
     entered = false; activated = false;
     menu.classList.remove('on');
-    hint.style.display = '';
     setSel(0);
-    lensSize(); drawTitle();
     window.scrollTo(0, 0);
   };
 })();
@@ -1155,11 +1303,8 @@ function scrambleText(el, real){
   tick();
 }
 
-let currentItem = null;
-let currentCat = null;
 function openCase(it, cat){
   if(opening || closing) return;
-  currentItem = it; currentCat = cat;
   opening = true;
   playPowerOn();
   burst.style.display = 'block';
@@ -1210,88 +1355,14 @@ function closeModal(){
     mbox.classList.remove('crt-off');
     document.body.style.overflow = '';
     closing = false;
-    closeTopo();
     shuffleStage(); /* 回到界面：打乱卡片顺序与布局 */
   }, 560);
 }
 /* 事件委托：✕ 按钮在每次开机时会被克隆重建，委托到 modal 上才不会丢 */
 modal.addEventListener('click', e => {
-  if(e.target.closest('.mtopo')){ if(currentItem) openTopo(currentItem, currentCat); return; }
   if(e.target === modal || e.target.closest('.mclose')) closeModal();
 });
-document.addEventListener('keydown', e => {
-  if(e.key !== 'Escape') return;
-  if(topoEl.classList.contains('show')) closeTopo();
-  else closeModal();
-});
-/* ── 拓扑弹窗：THE COORDINATE 分类坐标平面 ─────────────────────────── */
-const topoEl = document.getElementById('topo');
-const tbody = document.getElementById('tbody');
-const tcode = document.getElementById('tcode');
-document.getElementById('tclose').addEventListener('click', closeTopo);
-
-function openTopo(it, cat){
-  const mates = items.filter(x => x.category === it.category);
-  tcode.textContent = `THE COORDINATE — ${cat ? cat.code : ''} ${cat ? cat.label : ''} · ${mates.length} NODES`;
-
-  const bw = tbody.clientWidth || 400;
-  const bh = tbody.clientHeight || 600;
-  const unit = (Math.min(bw, bh) / 2 - 60) / 10;  /* 每坐标单位像素 */
-  const cx0 = bw / 2, cy0 = bh / 2;
-  const frag = [];
-
-  /* 十字轴 + 中心光晕 */
-  frag.push('<div class="topo-cross-v"></div><div class="topo-cross-h"></div><div class="topo-glow"></div>');
-
-  /* 轴刻度：-10 ~ 10，像素点阵数字（参考图样式） */
-  for(let v = -10; v <= 10; v += 5){
-    if(v !== 0){
-      frag.push(`<span class="tick" style="left:${cx0 + v * unit}px; top:${cy0 - 14}px">${v}</span>`);
-      frag.push(`<span class="tick" style="left:${cx0 + 14}px; top:${cy0 - v * unit}px">${v}</span>`);
-    }
-  }
-  frag.push(`<span class="tick" style="left:${cx0 - 18}px; top:${cy0 + 16}px">0</span>`);
-
-  /* 分类节点：黄金角螺旋布点（确定性） */
-  const activeIdx = Math.max(0, mates.findIndex(x => x.no === it.no));
-  const maxR = Math.min(bw, bh) / 2 - 78;
-  let activePos = null;
-  mates.forEach((m, k) => {
-    const a = k * 137.508 * Math.PI / 180;
-    const r = Math.min(46 + k * 17, maxR);
-    const px = cx0 + Math.cos(a) * r;
-    const py = cy0 + Math.sin(a) * r * 0.86;
-    const isActive = m.no === it.no;
-    if(isActive) activePos = { px, py };
-    frag.push(`<div class="tnode${isActive ? ' active' : ''}" style="left:${px}px; top:${py}px" title="${m.title}"></div>`);
-  });
-
-  /* 原点 → 激活节点的虚线指引 */
-  if(activePos){
-    const dx = activePos.px - cx0, dy = activePos.py - cy0;
-    const len = Math.hypot(dx, dy);
-    const rot = Math.atan2(dy, dx) * 180 / Math.PI;
-    frag.push(`<div class="tline" style="left:${cx0}px; top:${cy0}px; width:${len}px; transform:rotate(${rot}deg)"></div>`);
-    /* 坐标标签：(12.5) → (0.0, 0.0)，参考图样式 */
-    const gx = Math.round(dx / unit * 2) / 2;
-    const gy = Math.round(-dy / unit * 2) / 2;
-    const below = dy < 0; /* 节点在上方时标签放下面，反之放上面 */
-    const ly = below ? activePos.py + 22 : activePos.py - 52;
-    frag.push(`<div class="tlabel" style="left:${activePos.px}px; top:${ly}px">
-      《${it.title}》 · NO.${pad(it.no)}
-      <div class="coord">(${gx.toFixed(1)}, ${gy.toFixed(1)}) &#8594; (0.0, 0.0)</div>
-    </div>`);
-  }
-
-  tbody.innerHTML = frag.join('');
-  topoEl.classList.add('show');
-  document.body.classList.add('topo-on');
-}
-function closeTopo(){
-  topoEl.classList.remove('show');
-  document.body.classList.remove('topo-on');
-}
-
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 /* ── PANOPTIC 全景象限图：黑白灰像素场 + 光标热度交互（机制参考 craft.wild.as）
    常态为黑白灰环境点阵；光标经过沿途像素升温放大；停留核心变红；
    档案点停留约1s → 像素卡片放大展开；点击卡片/档案点 → 详情弹窗（不跳转） ── */
@@ -1552,6 +1623,33 @@ window.addEventListener('DOMContentLoaded', () => {
     if(it) setTimeout(() => openCase(it, window.CATEGORIES.find(c => c.key === it.category)), 600);
   }
 });
+
+/* ── 左侧隐藏导航栏：靠近左缘弹出，悬停选项放大红色高亮，点击跳转对应分栏 ─────────────────────────── */
+(function(){
+  const dock = document.getElementById('dock');
+  const hot = document.getElementById('dockHot');
+  if(!dock || !hot) return;
+  let hideT = null;
+  const openDock = () => { clearTimeout(hideT); dock.classList.add('on'); };
+  const closeDock = () => { hideT = setTimeout(() => dock.classList.remove('on'), 260); };
+  hot.addEventListener('mouseenter', openDock);
+  dock.addEventListener('mouseenter', openDock);
+  dock.addEventListener('mouseleave', closeDock);
+  /* 触屏：点热区直接展开/收起 */
+  hot.addEventListener('click', () => dock.classList.toggle('on'));
+
+  const links = Array.from(dock.querySelectorAll('a[data-nav]'));
+  links.forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    links.forEach(x => x.classList.toggle('hot', x === a));
+    dock.classList.remove('on');
+    const nav = a.dataset.nav;
+    if(nav === 'menu'){ window.backToEntry && window.backToEntry(); }
+    else if(nav === 'cruise' || nav === 'panoptic'){ window.__goView && window.__goView(nav); }
+    else if(nav === 'snap'){ window.__openSnap && window.__openSnap(); }
+    else if(nav === 'time'){ window.openTl && window.openTl(); }
+  }));
+})();
 </script>
 <script>
 /* 测试钩子：?tesc 自动返回父页 */
