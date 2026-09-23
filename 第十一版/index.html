@@ -119,7 +119,7 @@
   }
   #locktoast.show { opacity:1; transform:translate(-50%,0); }
 
-  /* ── 鱼眼信号 iframe（摄像头镜片内） ── */
+  /* ── 鱼眼信号 iframe（摄像头镜片内 → 全屏接管） ── */
   #lenswrap {
     position:fixed; z-index:20; border-radius:50%; overflow:hidden;
     box-shadow: inset 0 0 24px 10px rgba(0,0,0,.85);
@@ -127,6 +127,20 @@
   }
   #lenswrap iframe { width:100%; height:100%; border:0;
     filter:brightness(.72) contrast(1.12) saturate(.68); }
+  /* 页内交接：iframe 全屏，原生质感，可交互 */
+  #lenswrap.full {
+    left:0 !important; top:0 !important;
+    width:100vw !important; height:100vh !important;
+    border-radius:0 !important; box-shadow:none !important; z-index:95; display:block !important;
+  }
+  #lenswrap.full iframe { filter:none; }
+  /* 交接后隐藏本页全部 OSD 与叠加层 */
+  body.handoff #scanlines, body.handoff #scanband, body.handoff #noise, body.handoff #vignette,
+  body.handoff .osd-clock, body.handoff #osdrec, body.handoff #camtag, body.handoff #stagedots,
+  body.handoff #hint, body.handoff #skip, body.handoff #infocard, body.handoff #inset,
+  body.handoff #insettag, body.handoff #lensglass, body.handoff #locktoast, body.handoff #scene {
+    display:none !important;
+  }
   #lensglass {
     position:fixed; z-index:21; border-radius:50%; pointer-events:auto; display:none; cursor:pointer;
     background:
@@ -771,6 +785,7 @@ const camLabels=[
 ];
 
 function frame(now){
+  if(handedOff) return;   // 已交接给鱼眼 iframe，停止本页渲染
   const dt=Math.min((now-lastT)/1000,.05); lastT=now; timeSec+=dt;
   if(qs.get('lock')===null) S+=(targetS-S)*.075;
   hintTimer+=dt;
@@ -948,9 +963,11 @@ function drawHud(cam){
 
 /* ═══ 镜片内鱼眼信号 ═══ */
 let lensLoaded=false;
+const FEED_SRC=qs.get('feed')||'fisheye/';
 const lenswrap=document.getElementById('lenswrap');
 const lensglass=document.getElementById('lensglass');
 const lensfeed=document.getElementById('lensfeed');
+function loadFeed(){ if(!lensLoaded){ lensLoaded=true; lensfeed.src=FEED_SRC; } }
 function updateLens(cam){
   const active=S>3.5;
   lenswrap.style.display=active?'block':'none';
@@ -958,7 +975,7 @@ function updateLens(cam){
   if(!active) return;
   if(!lensLoaded){
     lensLoaded=true;
-    lensfeed.src='fisheye/';
+    lensfeed.src=FEED_SRC;
   }
   const c=w2s(LENS.x,LENS.y,cam);
   const r=LENS.r*cam.z*.94;
@@ -1006,8 +1023,19 @@ function startFinale(){
     g.font='bold 22px monospace'; g.fillStyle='#fff'; g.textAlign='center';
     if(t>.25&&t<1.05){ g.fillText('SIGNAL SWITCHING · 信号接入中',W/2,H/2-14); g.font='14px monospace'; g.fillText('CAM-07 → FISHEYE FEED',W/2,H/2+16); }
     if(t<1.15) requestAnimationFrame(anim);
-    else if(qs.get('stay')===null) location.href='fisheye/';
+    else if(qs.get('stay')===null) handoffToFisheye();
   })();
+}
+
+/* ═══ 页内交接：镜片 iframe 全屏接管（不跳转，URL 不变） ═══ */
+let handedOff=false;
+function handoffToFisheye(){
+  if(handedOff) return;
+  handedOff=true;
+  document.body.classList.add('handoff');
+  lenswrap.classList.add('full');
+  const burstEl=document.getElementById('burst');
+  setTimeout(()=>{ burstEl.style.display='none'; },160);
 }
 
 /* ═══ 输入 ═══ */
@@ -1059,7 +1087,9 @@ cv.addEventListener('click',e=>{
 });
 
 document.getElementById('skip').addEventListener('click',()=>{
-  location.href='fisheye/';
+  if(finaleOn||handedOff) return;
+  loadFeed();
+  S=Math.max(S,4.5); targetS=4.62;
 });
 
 document.getElementById('lensglass').addEventListener('click',()=>{
@@ -1067,7 +1097,7 @@ document.getElementById('lensglass').addEventListener('click',()=>{
 });
 
 /* 预热鱼眼信号 */
-if(S>3.2){ lensLoaded=true; lensfeed.src='fisheye/'; }
+if(S>3.2) loadFeed();
 
 /* 测试用：?go 直接触发终结；?burst 同步触发 */
 if(qs.get('go')!==null){ setTimeout(()=>{ targetS=4.62; },400); }
