@@ -239,14 +239,23 @@ footer{
 .mbody{padding:22px 26px 26px}
 .mscreen{
   position:relative; max-width:580px; margin:0 auto 24px; background:#000;
-  border:6px solid #1a1e21; border-radius:4px; overflow:hidden;
+  border:6px solid #1a1e21; border-radius:4px;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 30px rgba(0,0,0,.7), 0 0 24px rgba(200,220,255,.07);
+  cursor:pointer; perspective:1400px;
 }
-.mscreen img{width:100%; height:auto; max-height:400px; object-fit:contain; display:block; background:#000}
-.mscreen::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
-}
+.flip-inner{position:relative; transform-style:preserve-3d; transition:transform .65s cubic-bezier(.25,.8,.3,1)}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.face{backface-visibility:hidden; -webkit-backface-visibility:hidden; background:#000}
+.face.back{position:absolute; inset:0; transform:rotateY(180deg); overflow:hidden}
+.fcap{display:flex; justify-content:space-between; align-items:center; padding:7px 12px; background:#101315; border-bottom:2px solid #060708; font-size:12px; letter-spacing:.16em; color:#8a8d85}
+.fcap .ftag{color:#c8b8a8; font-weight:600}
+.fcap .ftag.b{color:#a8bcc8}
+.fcap i{font-style:normal; color:#565a54; letter-spacing:.22em; margin-left:6px}
+.fcap .fhint{font-size:10px; color:#4a4d48; letter-spacing:.2em}
+.fimg{position:relative; height:min(36vh,320px); display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden}
+.fimg img{width:100%; height:100%; object-fit:contain; display:block}
+.fimg::after{content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px)}
+.ftext{margin:0; padding:8px 12px 10px; font-size:11px; line-height:1.9; color:#9a9d95; max-height:104px; overflow:auto; white-space:pre-wrap; background:rgba(10,12,13,.6)}
 .mscreen .mstat{position:absolute; inset:0}
 .mh2{font-size:24px; letter-spacing:.1em; color:var(--ink); margin-bottom:10px; text-shadow:2px 2px 0 #000,0 0 14px rgba(242,242,234,.22)}
 .mmeta{font-size:12px; letter-spacing:.12em; line-height:2; color:var(--dim)}
@@ -672,7 +681,20 @@ html,body,a,button,[role="button"]{cursor:none}
         <button type="button" class="mclose" id="mclose" aria-label="关闭">✕</button>
       </div>
       <div class="mbody">
-        <div class="mscreen" id="mscreen"></div>
+        <div class="mscreen" id="mscreen">
+          <div class="flip-inner" id="flipInner">
+            <div class="face front">
+              <div class="fcap"><span><b class="ftag">&#9650; 监控者</b><i>WATCHER</i></span><span class="fhint">点击翻转 &#8646; FLIP</span></div>
+              <div class="fimg" id="wImgBox"></div>
+              <p class="ftext" id="wFaceTxt"></p>
+            </div>
+            <div class="face back">
+              <div class="fcap"><span><b class="ftag b">&#9661; 被监控者</b><i>WATCHED</i></span><span class="fhint">点击翻转 &#8646; FLIP</span></div>
+              <div class="fimg" id="bImgBox"></div>
+              <p class="ftext" id="bFaceTxt"></p>
+            </div>
+          </div>
+        </div>
         <h2 class="mh2" id="mtitle"></h2>
         <div class="mmeta" id="mmeta"></div>
         <div class="mdivider"></div>
@@ -957,9 +979,22 @@ function openCase(it, cat){
   burst.style.display = 'block';
   setTimeout(() => {
     burst.style.display = 'none';
-    document.getElementById('mscreen').innerHTML = (it.broken || it.noImage)
-      ? '<div class="mstat static-fill"></div><div class="no-signal">NO SIGNAL</div>'
-      : `<img src="img/img-${String(it.no).padStart(2,'0')}.jpg" alt="${it.title}">`;
+    /* 双面翻转卡片：正面=监控者图片+文案，背面=被监控者图片+文案 */
+    const noPad = String(it.no).padStart(2,'0');
+    const hasMed = !(it.broken || it.noImage);
+    const wSrc = it.wImg ? `img/img-w${noPad}.jpg` : (hasMed ? `img/img-${noPad}.jpg` : null);
+    const bSrc = it.bImg ? `img/img-b${noPad}.jpg` : (it.wImg && hasMed ? `img/img-${noPad}.jpg` : null);
+    const fillFace = (boxId, srcUrl) => {
+      const box = document.getElementById(boxId);
+      box.innerHTML = srcUrl
+        ? `<img loading="lazy" src="${srcUrl}" alt="${it.title}">`
+        : '<div class="mstat static-fill"></div><div class="no-signal">NO SIGNAL</div>';
+    };
+    fillFace('wImgBox', wSrc);
+    fillFace('bImgBox', bSrc);
+    document.getElementById('wFaceTxt').textContent = it.wtxt || '（数据库未收录【监控者】字段）';
+    document.getElementById('bFaceTxt').textContent = it.btxt || '（数据库未收录【被监控者】字段）';
+    document.getElementById('flipInner').classList.remove('flipped');
 
     /* 重挂开机动画：先克隆重置动画状态（必须在取元素引用之前，否则引用会指向被替换掉的旧节点） */
     mbox.querySelectorAll('.boot-static, .boot-line, .boot-content').forEach(n => {
@@ -1008,6 +1043,10 @@ function closeModal(){
 /* 事件委托：✕ 按钮在每次开机时会被克隆重建，委托到 modal 上才不会丢 */
 modal.addEventListener('click', e => {
   if(e.target === modal || e.target.closest('.mclose')) closeModal();
+  else if(e.target.closest('#mscreen')){
+    const fi = document.getElementById('flipInner');
+    if(fi) fi.classList.toggle('flipped');   /* 点击档案图：翻转 监控者 ⇄ 被监控者 */
+  }
 });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 
